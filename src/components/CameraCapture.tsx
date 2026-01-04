@@ -64,6 +64,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onError
       <input
         type="file"
         accept="image/*"
+        multiple={false}
         onChange={handleFileChange}
         ref={fileInputRef}
         className="hidden"
