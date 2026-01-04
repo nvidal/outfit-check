@@ -5,12 +5,12 @@ An AI-powered fashion coach that provides instant, visually-grounded feedback on
 ## ✨ Features
 
 - **🤖 Gemini 3 Flash (Preview)**: Leverages Google's latest multimodal model for lightning-fast analysis and spatial awareness.
-- **🎯 Visual Highlights**: Uses \`box_2d\` coordinates to draw interactive bounding boxes over specific items (shoes, pants, accessories) to show exactly what the AI is critiquing.
-- **🎭 Multiple Personas**:
+- **🎯 Visual Highlights**: Uses `box_2d` coordinates to draw interactive bounding boxes over specific items (shoes, pants, accessories) to show exactly what the AI is critiquing.
+- **🎭 Multiple Personas**: All three personas are evaluated before the results screen loads, then the results page lets you switch instantly via persona tabs; the highest-scoring persona opens first.
   - **La Directora (Editor)**: Professional, sophisticated, and ruthless about proportions and tailoring.
   - **El Cool (Hypebeast)**: Gen Z trend scout focused on "drip", "flex", and brand synergy.
   - **Amiga Boho (Bestie)**: Supportive, honest, and encouraging feedback with a warm tone.
-- **🌍 Multilingual**: Full support for English (🇬🇧) and Spanish (🇪🇸) via \`react-i18next\`.
+- **🌍 Multilingual**: Full support for English (🇬🇧) and Spanish (🇪🇸) via `react-i18next`.
 - **⚡ Performance**:
   - **Client-side Compression**: Images are resized and compressed in the browser before upload to ensure fast processing.
   - **Tailwind CSS v4**: Built with the latest CSS-first framework for a high-performance UI.
@@ -39,30 +39,35 @@ An AI-powered fashion coach that provides instant, visually-grounded feedback on
 ### Installation
 
 1. **Clone the repository**:
-   \`\`\`bash
+   ```bash
    git clone https://github.com/your-username/outfit-check.git
    cd outfit-check
-   \`\`\`
+   ```
 
 2. **Install dependencies**:
-   \`\`\`bash
+   ```bash
    npm install
-   \`\`\`
+   ```
 
 3. **Set up environment variables**:
-   Create a \`.env\` file in the root directory:
-   \`\`\`env
+   Create a `.env` file in the root directory:
+   ```env
    GEMINI_API_KEY=your_gemini_key
    SUPABASE_URL=your_supabase_url
    SUPABASE_ANON_KEY=your_supabase_key
    DATABASE_URL=your_neon_postgres_url
-   \`\`\`
+   ```
 
 4. **Run the development server**:
-   \`\`\`bash
+   ```bash
    # Start Vite and Netlify Functions together
    netlify dev
-   \`\`\`
+   ```
+
+5. **Reset the `scans` table (optional)**:
+   ```bash
+   psql $DATABASE_URL -f scripts/reset_scans_table.sql
+   ```
 
 ## 📝 License
 

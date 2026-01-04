@@ -25,6 +25,8 @@ const resources = {
       "score": "Score",
       "improvement_tip": "Improvement Tip",
       "another_try": "Try another look",
+      "persona_label": "Judge",
+      "analysis_error": "Failed to analyze outfit. Please try again."
     }
   },
   es: {
@@ -50,7 +52,9 @@ const resources = {
       "score": "Puntuación",
       "improvement_tip": "Consejo",
       "another_try": "Probar otro look",
+      "persona_label": "Jurado",
       "score_label": "Puntuación",
+      "analysis_error": "No pudimos analizar el outfit. Intenta de nuevo."
     }
   }
 };

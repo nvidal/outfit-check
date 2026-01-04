@@ -1,5 +1,8 @@
 # System Prompts & Logic
 
+## Execution Flow
+Each analysis request iterates through the persona list (`editor`, `hypebeast`, `boho`) and runs the master prompt for every persona. The backend tags each response with the persona label and returns an array of persona results so the client can render instant persona tabs on the results screen without re-triggering the AI.
+
 ## Master Prompt Template
 The backend function will construct the final prompt dynamically using this template.
 
@@ -13,8 +16,6 @@ Trend Knowledge: High (Aware of Gorpcore, Y2K, Old Money, etc).
 {persona_instruction}
 
 **The Context:**
-- Occasion: {occasion}
-- Target Language: {language} (CRITICAL: Respond strictly in this language).
 
 **Task:**
 Analyze the attached image of the outfit.
@@ -32,6 +33,8 @@ Return raw JSON only. Do not use Markdown code blocks.
   "improvement_tip": "One concrete, actionable step to fix the outfit.",
   "search_terms": "A specific search query to find the recommended item to buy (e.g. 'mens beige linen trousers loose fit')"
 }
+
+The server-side handler adds a `persona` key (editor/hypebeast/boho) to every JSON blob before including it in the returned array.
 
 ## Persona Instructions (Variables)
 1. Mode: "The Editor"

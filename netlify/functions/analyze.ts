@@ -56,7 +56,7 @@ export default async function handler(req: Request) {
     return formatError("Missing storage configuration", 500);
   }
 
-  let body: { image?: string; mode?: string; language?: string; occasion?: string };
+  let body: { image?: string; language?: string; occasion?: string; user_id?: string; user_name?: string };
 
   try {
     body = await req.json();
@@ -65,9 +65,10 @@ export default async function handler(req: Request) {
   }
 
   const image = body.image;
-  const mode = body.mode ?? "editor";
   const language = body.language ?? "en";
   const occasion = body.occasion ?? "general";
+  const userId = body.user_id ?? null;
+  const userName = body.user_name ?? null;
 
   if (!image) {
     return formatError("No image provided", 400);
@@ -108,28 +109,47 @@ export default async function handler(req: Request) {
 
     const ai = new GoogleGenAI({ apiKey });
 
-    let personaInstruction = "";
-    if (mode === "hypebeast") {
-      personaInstruction = `You are a Gen Z trend scout (El Cool). You care about silhouette, brand relevance, and 'vibes'. Use slang like 'fit', 'flex', 'drip', 'grail', 'clean'. Focus on brand synergy and street credibility.`;
-    } else if (mode === "boho") {
-      personaInstruction = `You are a warm, free-spirited stylist (Amiga Boho). You love textures, layers, and earth tones. Talk like a supportive but honest best friend. Use emojis and be very encouraging but direct about what's not working.`;
-    } else {
-      personaInstruction = `You are a ruthless fashion editor (La Directora). You care about proportions, tailoring, and fabric quality. Use professional terminology like 'silhouette', 'color palette', 'textural contrast', and 'composition'. Your tone is professional and sophisticated.`;
-    }
+    type PersonaMode = 'editor' | 'hypebeast' | 'boho';
+    const personaConfigs: Array<{ id: PersonaMode; instruction: string }> = [
+      {
+        id: 'editor',
+        instruction: `You are a ruthless fashion editor (La Directora). You care about proportions, tailoring, and fabric quality. Use professional terminology like 'silhouette', 'color palette', 'textural contrast', and 'composition'. Your tone is professional and sophisticated.`,
+      },
+      {
+        id: 'hypebeast',
+        instruction: `You are a Gen Z trend scout (El Cool). You care about silhouette, brand relevance, and 'vibes'. Use slang like 'fit', 'flex', 'drip', 'grail', 'clean'. Focus on brand synergy and street credibility.`,
+      },
+      {
+        id: 'boho',
+        instruction: `You are a warm, free-spirited stylist (Amiga Boho). You love textures, layers, and earth tones. Talk like a supportive but honest best friend. Use emojis and be very encouraging but direct about what's not working.`,
+      },
+    ];
 
-    const prompt = `
+    const regionLabel = language === 'es'
+      ? 'Uruguay/Argentina (use local slang like "che", "re", "copado" if appropriate for the persona)'
+      : 'Global';
+
+    const imagePart = {
+      inlineData: {
+        data: base64,
+        mimeType,
+      },
+    };
+
+    const personaResults = await Promise.all(personaConfigs.map(async (persona) => {
+      const prompt = `
 **Role:**
 You are an expert Personal Stylist AI.
 Current Year: 2026.
 Trend Knowledge: High (Aware of Gorpcore, Y2K, Old Money, etc).
 
 **The Persona You Must Act As:**
-${personaInstruction}
+${persona.instruction}
 
 **The Context:**
 - Occasion: ${occasion}
 - Target Language: ${language}
-- Region: ${language === 'es' ? 'Uruguay/Argentina (use local slang like "che", "re", "copado" if appropriate for the persona)' : 'Global'}
+- Region: ${regionLabel}
 
 **Task:**
 Analyze the attached image of the outfit.
@@ -156,23 +176,22 @@ Return raw JSON only. Do not use Markdown code blocks.
 }
 `;
 
-    const imagePart = {
-      inlineData: {
-        data: base64,
-        mimeType,
-      },
-    };
+      const result = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [prompt, imagePart],
+      });
+      const responseText = result.text;
+      if (!responseText) {
+        throw new Error("Empty response from AI");
+      }
+      const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+      const data = JSON.parse(jsonString);
 
-    const result = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: [prompt, imagePart],
-    });
-    const responseText = result.text;
-    if (!responseText) {
-      throw new Error("Empty response from AI");
-    }
-    const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-    const data = JSON.parse(jsonString);
+      return {
+        persona: persona.id,
+        ...data,
+      };
+    }));
 
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) {
@@ -184,23 +203,21 @@ Return raw JSON only. Do not use Markdown code blocks.
 
     try {
       await client.query(
-        "INSERT INTO scans (image_url, mode, language, occasion, ai_result) VALUES ($1, $2, $3, $4, $5)",
+        "INSERT INTO scans (image_url, language, occasion, user_id, user_name, ai_results) VALUES ($1, $2, $3, $4, $5, $6)",
         [
           imageUrl,
-          mode,
           language,
           occasion,
-          JSON.stringify({
-            ...data,
-            occasion,
-          }),
+          userId,
+          userName,
+          JSON.stringify(personaResults),
         ],
       );
     } finally {
       await client.end();
     }
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify(personaResults), {
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   } catch (error) {

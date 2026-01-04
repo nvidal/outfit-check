@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { ModeSelector } from './components/ModeSelector';
 import type { Mode } from './components/ModeSelector';
 import { CameraCapture } from './components/CameraCapture';
 import './i18n';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, ScanEye, Flame, Flower2, ChevronsDown } from 'lucide-react';
 
 interface AnalysisResult {
   score: number;
@@ -19,14 +18,19 @@ interface AnalysisResult {
   }[];
 }
 
+interface PersonaAnalysisResult extends AnalysisResult {
+  persona: Mode;
+}
+
 function App() {
   const { t, i18n } = useTranslation();
   
-  const [mode, setMode] = useState<Mode>('editor');
   const [image, setImage] = useState<string | null>(null);
   const [occasion, setOccasion] = useState<string>('casual');
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [personaResults, setPersonaResults] = useState<PersonaAnalysisResult[] | null>(null);
+  const [selectedPersona, setSelectedPersona] = useState<Mode>('editor');
+  const [personaDropdownOpen, setPersonaDropdownOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeHighlight, setActiveHighlight] = useState<number | null>(null);
 
@@ -45,6 +49,11 @@ function App() {
     setError(message || null);
   };
 
+  const handlePersonaSelect = (persona: Mode) => {
+    setSelectedPersona(persona);
+    setActiveHighlight(null);
+  };
+
   const handleAnalyze = async () => {
     if (!image) return;
 
@@ -54,17 +63,29 @@ function App() {
     try {
       const response = await axios.post('/.netlify/functions/analyze', {
         image,
-        mode,
         language: i18n.language,
         occasion
       });
 
-      setResult(response.data);
+      const results = response.data as PersonaAnalysisResult[];
+      setPersonaResults(results);
+      const best = results.length > 0
+        ? results.reduce<PersonaAnalysisResult | null>((bestSoFar, current) => {
+            if (!bestSoFar || current.score > bestSoFar.score) {
+              return current;
+            }
+            return bestSoFar;
+          }, results[0])
+        : null;
+      if (best) {
+        setSelectedPersona(best.persona);
+      }
+      setActiveHighlight(null);
     } catch (err) {
       console.error(err);
       const message = axios.isAxiosError(err) && err.response?.data?.error
         ? err.response.data.error
-        : 'Failed to analyze outfit. Please try again.';
+        : t('analysis_error');
       setError(message);
     } finally {
       setIsLoading(false);
@@ -76,31 +97,84 @@ function App() {
     ? 'https://flagcdn.com/gb.svg' 
     : 'https://flagcdn.com/es.svg';
 
-  if (result) {
+  const displayResult = personaResults?.find((res) => res.persona === selectedPersona) ?? personaResults?.[0] ?? null;
+
+  if (personaResults && displayResult) {
     return (
       <div className="flex h-dvh flex-col bg-[#0a428d] text-white p-6 font-sans overflow-y-auto">
         <header className="relative mb-4 shrink-0 flex items-center justify-between">
           <button
             onClick={() => {
-              setResult(null);
+              setPersonaResults(null);
               setImage(null);
               setActiveHighlight(null);
+              setSelectedPersona('editor');
             }}
             className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity"
           >
             ← {t('another_try')}
           </button>
           <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">
-            {t(`mode_${mode}`)} • {t(`occasion_${occasion}`)}
+            {t(`mode_${selectedPersona}`)} • {t(`occasion_${occasion}`)}
           </div>
         </header>
+
+        <div className="relative mb-6 flex flex-col gap-1">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">{t('persona_label')}</span>
+          <button
+            type="button"
+            onClick={() => setPersonaDropdownOpen((open) => !open)}
+            className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/30 bg-white/80 px-4 py-3 text-xs font-black uppercase tracking-wide text-[#0a428d] shadow-sm transition focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a428d]"
+          >
+            <span className="flex items-center gap-2">
+              {(() => {
+                const Icon = selectedPersona === 'editor'
+                  ? ScanEye
+                  : selectedPersona === 'hypebeast'
+                    ? Flame
+                    : Flower2;
+                return <Icon size={16} className="text-[#0a428d]" />;
+              })()}
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0a428d]">
+                {t(`mode_${selectedPersona}`)}
+              </span>
+            </span>
+            <ChevronsDown size={18} className="text-[#0a428d]" />
+          </button>
+
+          {personaDropdownOpen && (
+            <div className="absolute z-10 mt-2 w-full rounded-2xl border border-white/30 bg-white/90 shadow-lg backdrop-blur">
+              {personaResults.map((persona) => {
+                const Icon = persona.persona === 'editor'
+                  ? ScanEye
+                  : persona.persona === 'hypebeast'
+                    ? Flame
+                    : Flower2;
+                return (
+                  <button
+                    key={persona.persona}
+                    type="button"
+                    onClick={() => {
+                      handlePersonaSelect(persona.persona);
+                      setPersonaDropdownOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-3 border-b border-white/10 px-4 py-3 text-left text-xs font-black uppercase tracking-[0.2em] text-[#0a428d] transition hover:bg-white/70 ${persona.persona === personaResults[personaResults.length - 1].persona ? 'border-b-0' : ''}`}
+                  >
+                    <Icon size={16} className="text-[#0a428d]" />
+                    {t(`mode_${persona.persona}`)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         <main className="flex flex-1 flex-col gap-6 max-w-lg mx-auto w-full pb-8">
           <div className="relative aspect-3/4 w-full max-h-[60vh] mx-auto overflow-hidden rounded-3xl border-4 border-blue-400/40 shadow-2xl shrink-0">
             <img src={image!} alt="Outfit" className="h-full w-full object-cover" />
             
             {/* Visual Highlights Overlay */}
-            {result.highlights.map((h, i) => {
+            {displayResult.highlights.map((h, i) => {
               const [ymin, xmin, ymax, xmax] = h.box_2d;
               const top = ymin / 10;
               const left = xmin / 10;
@@ -131,18 +205,18 @@ function App() {
 
             <div className="absolute bottom-3 right-3 flex items-center gap-2 rounded-xl bg-black/60 px-3 py-1 backdrop-blur-md border border-white/10">
               <span className="text-[10px] font-black uppercase tracking-widest opacity-70">{t('score')}</span>
-              <span className="text-xl font-black">{result.score}/10</span>
+              <span className="text-xl font-black">{displayResult.score}/10</span>
             </div>
           </div>
 
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <h2 className="text-2xl font-black tracking-tight">{result.title}</h2>
+            <h2 className="text-2xl font-black tracking-tight">{displayResult.title}</h2>
 
-            <p className="text-lg leading-snug opacity-90">{result.critique}</p>
+            <p className="text-lg leading-snug opacity-90">{displayResult.critique}</p>
 
             {/* Highlights List */}
             <div className="grid gap-2">
-              {result.highlights.map((h, i) => (
+              {displayResult.highlights.map((h, i) => (
                 <button 
                   key={i} 
                   onClick={() => setActiveHighlight(activeHighlight === i ? null : i)}
@@ -157,9 +231,12 @@ function App() {
               ))}
             </div>
 
-            <div className="rounded-2xl bg-white/5 p-4 border border-white/10">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50 mb-1">{t('improvement_tip')}</p>
-              <p className="font-medium">{result.improvement_tip}</p>
+            <div className="rounded-2xl bg-white/10 p-5 border border-white/20 shadow-[0_20px_45px_rgba(10,66,141,0.25)]">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles size={16} className="text-amber-300" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-90">{t('improvement_tip')}</p>
+              </div>
+              <p className="font-medium">{displayResult.improvement_tip}</p>
             </div>
           </div>
         </main>
@@ -177,13 +254,16 @@ function App() {
       )}
 
       <header className="relative mb-6 text-center shrink-0">
-        <h1 className="text-4xl font-black tracking-tighter sm:text-5xl title-font">OUTFIT CHECK</h1>
+        <h1 className="text-4xl font-black tracking-tighter sm:text-5xl title-font inline-flex items-center justify-center gap-3">
+          <Sparkles size={32} className="text-amber-300" />
+          OUTFIT CHECK
+        </h1>
         <button
           onClick={toggleLanguage}
           className="absolute right-0 top-1/2 -translate-y-1/2 transition hover:scale-110 active:scale-90"
           title={i18n.language === 'en' ? 'Switch to Spanish' : 'Cambiar a Inglés'}
         >
-          <img src={flagUrl} alt="Language" className="w-5 h-5 rounded-full object-cover shadow-md hover:opacity-100" />
+          <img src={flagUrl} alt="Language" className="w-4 h-4 rounded-full object-cover shadow-md hover:opacity-100" />
         </button>
       </header>
 
@@ -207,8 +287,6 @@ function App() {
               </button>
             ))}
           </div>
-
-          <ModeSelector selectedMode={mode} onSelectMode={setMode} />
 
           <button
             onClick={handleAnalyze}
