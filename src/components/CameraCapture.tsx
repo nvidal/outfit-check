@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Camera, Upload } from 'lucide-react';
+import { Camera } from 'lucide-react';
 
 interface CameraCaptureProps {
   onCapture: (base64Image: string) => void;
@@ -9,7 +9,7 @@ interface CameraCaptureProps {
 
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onError }) => {
   const { t } = useTranslation();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
   const compressImage = (base64Str: string): Promise<string> => {
@@ -59,27 +59,23 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onError
     }
   };
 
-  const triggerInput = () => {
-    inputRef.current?.click();
-  };
-
   return (
     <div className="w-full h-full">
       <input
         type="file"
         accept="image/*"
         onChange={handleFileChange}
-        ref={inputRef}
+        ref={fileInputRef}
         className="hidden"
       />
       
       {!preview ? (
         <button
-          onClick={triggerInput}
-          className="w-full h-full min-h-[200px] border-4 border-dashed border-blue-400/40 rounded-3xl flex flex-col items-center justify-center text-white bg-white/5 hover:bg-white/10 transition-all"
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full h-full border-4 border-dashed border-blue-400/40 rounded-3xl flex flex-col items-center justify-center text-white bg-white/5 hover:bg-white/10 transition-all"
         >
-          <Camera size={64} className="mb-4 opacity-40" />
-          <span className="font-black text-xl uppercase tracking-widest">{t('upload_btn')}</span>
+          <Camera size={48} className="mb-3 opacity-40" />
+          <span className="font-black text-sm uppercase tracking-widest">{t('upload_btn')}</span>
         </button>
       ) : (
         <div className="relative h-full min-h-[200px] rounded-3xl overflow-hidden shadow-2xl border-4 border-blue-400/40 bg-black">
@@ -89,10 +85,10 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onError
             className="w-full h-full object-cover"
           />
           <button
-            onClick={triggerInput}
+            onClick={() => fileInputRef.current?.click()}
             className="absolute bottom-4 right-4 bg-white p-4 rounded-2xl shadow-xl text-[#0a428d] transition active:scale-90"
           >
-            <Upload size={24} />
+            <Camera size={24} />
           </button>
         </div>
       )}

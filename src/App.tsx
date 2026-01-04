@@ -78,7 +78,7 @@ function App() {
 
   if (result) {
     return (
-      <div className="flex h-screen flex-col bg-[#0a428d] text-white p-6 font-sans overflow-y-auto">
+      <div className="flex h-dvh flex-col bg-[#0a428d] text-white p-6 font-sans overflow-y-auto">
         <header className="relative mb-4 shrink-0 flex items-center justify-between">
           <button
             onClick={() => {
@@ -168,7 +168,7 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-[#0a428d] text-white p-6 font-sans overflow-y-auto">
+    <div className="flex h-dvh flex-col bg-[#0a428d] text-white p-6 font-sans overflow-hidden">
       {isLoading && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
@@ -183,16 +183,16 @@ function App() {
           className="absolute right-0 top-1/2 -translate-y-1/2 transition hover:scale-110 active:scale-90"
           title={i18n.language === 'en' ? 'Switch to Spanish' : 'Cambiar a Inglés'}
         >
-          <img src={flagUrl} alt="Language" className="w-5 h-3 object-cover shadow-sm opacity-80 hover:opacity-100" />
+          <img src={flagUrl} alt="Language" className="w-5 h-5 rounded-full object-cover shadow-md hover:opacity-100" />
         </button>
       </header>
 
-      <main className="flex flex-1 flex-col gap-4 max-w-lg mx-auto w-full pb-6">
-        <div className="relative w-full aspect-3/4 max-h-[65vh] mx-auto shrink-0">
+      <main className="flex flex-1 flex-col gap-4 max-w-lg mx-auto w-full min-h-0">
+        <div className="relative w-full flex-1 min-h-0 mx-auto">
           <CameraCapture onCapture={handleCapture} onError={handleCaptureError} />
         </div>
 
-        <div className="space-y-4 shrink-0">
+        <div className="space-y-4 shrink-0 pb-2">
           <div className="flex gap-2">
             {occasionOptions.map((occ) => (
               <button

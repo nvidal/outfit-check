@@ -6,6 +6,8 @@ const resources = {
     translation: {
       "app_title": "Outfit Check",
       "upload_btn": "Take Photo / Upload",
+      "camera_btn": "Camera",
+      "gallery_btn": "Gallery",
       "analyzing": "Analyzing your fit...",
       "mode_editor": "The Editor",
       "mode_hypebeast": "The Hypebeast",
@@ -29,6 +31,8 @@ const resources = {
     translation: {
       "app_title": "Outfit Check",
       "upload_btn": "Tomar Foto / Subir",
+      "camera_btn": "Cámara",
+      "gallery_btn": "Galería",
       "analyzing": "Analizando tu outfit...",
       "mode_editor": "La Directora",
       "mode_hypebeast": "El Cool",
