@@ -72,7 +72,9 @@ function App() {
   };
 
   const occasionOptions = ['casual', 'work', 'date'];
-  const flag = i18n.language === 'en' ? '🇬🇧' : '🇪🇸';
+  const flagUrl = i18n.language === 'en' 
+    ? 'https://flagcdn.com/gb.svg' 
+    : 'https://flagcdn.com/es.svg';
 
   if (result) {
     return (
@@ -94,7 +96,7 @@ function App() {
         </header>
 
         <main className="flex flex-1 flex-col gap-6 max-w-lg mx-auto w-full pb-8">
-          <div className="relative aspect-3/4 w-full max-h-[50vh] mx-auto overflow-hidden rounded-3xl border-4 border-white/10 shadow-2xl shrink-0">
+          <div className="relative aspect-3/4 w-full max-h-[60vh] mx-auto overflow-hidden rounded-3xl border-4 border-blue-400/40 shadow-2xl shrink-0">
             <img src={image!} alt="Outfit" className="h-full w-full object-cover" />
             
             {/* Visual Highlights Overlay */}
@@ -166,7 +168,7 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-[#0a428d] text-white p-6 font-sans overflow-hidden">
+    <div className="flex h-screen flex-col bg-[#0a428d] text-white p-6 font-sans overflow-y-auto">
       {isLoading && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
@@ -174,23 +176,23 @@ function App() {
         </div>
       )}
 
-      <header className="relative mb-6 text-center">
+      <header className="relative mb-6 text-center shrink-0">
         <h1 className="text-4xl font-black tracking-tighter sm:text-5xl title-font">OUTFIT CHECK</h1>
         <button
           onClick={toggleLanguage}
-          className="absolute right-0 top-1/2 -translate-y-1/2 text-2xl transition hover:scale-110 active:scale-90"
+          className="absolute right-0 top-1/2 -translate-y-1/2 transition hover:scale-110 active:scale-90"
           title={i18n.language === 'en' ? 'Switch to Spanish' : 'Cambiar a Inglés'}
         >
-          {flag}
+          <img src={flagUrl} alt="Language" className="w-5 h-3 object-cover shadow-sm opacity-80 hover:opacity-100" />
         </button>
       </header>
 
-      <main className="flex flex-1 flex-col gap-4 max-w-lg mx-auto w-full">
-        <div className="flex-1 min-h-0">
+      <main className="flex flex-1 flex-col gap-4 max-w-lg mx-auto w-full pb-6">
+        <div className="relative w-full aspect-3/4 max-h-[65vh] mx-auto shrink-0">
           <CameraCapture onCapture={handleCapture} onError={handleCaptureError} />
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 shrink-0">
           <div className="flex gap-2">
             {occasionOptions.map((occ) => (
               <button

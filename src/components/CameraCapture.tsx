@@ -68,7 +68,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onError
       <input
         type="file"
         accept="image/*"
-        capture="environment"
         onChange={handleFileChange}
         ref={inputRef}
         className="hidden"
@@ -77,13 +76,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onError
       {!preview ? (
         <button
           onClick={triggerInput}
-          className="w-full h-full min-h-75 border-4 border-dashed border-white/20 rounded-3xl flex flex-col items-center justify-center text-white bg-white/5 hover:bg-white/10 transition-all"
+          className="w-full h-full min-h-[200px] border-4 border-dashed border-blue-400/40 rounded-3xl flex flex-col items-center justify-center text-white bg-white/5 hover:bg-white/10 transition-all"
         >
           <Camera size={64} className="mb-4 opacity-40" />
           <span className="font-black text-xl uppercase tracking-widest">{t('upload_btn')}</span>
         </button>
       ) : (
-        <div className="relative h-full min-h-75 rounded-3xl overflow-hidden shadow-2xl border-4 border-white/10 bg-black">
+        <div className="relative h-full min-h-[200px] rounded-3xl overflow-hidden shadow-2xl border-4 border-blue-400/40 bg-black">
           <img 
             src={preview} 
             alt="Outfit Preview" 

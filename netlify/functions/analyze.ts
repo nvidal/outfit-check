@@ -129,6 +129,7 @@ ${personaInstruction}
 **The Context:**
 - Occasion: ${occasion}
 - Target Language: ${language}
+- Region: ${language === 'es' ? 'Uruguay/Argentina (use local slang like "che", "re", "copado" if appropriate for the persona)' : 'Global'}
 
 **Task:**
 Analyze the attached image of the outfit.
