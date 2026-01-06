@@ -17,7 +17,8 @@ The project uses a **Serverless Proxy** architecture to keep API keys secure.
     *   Communicate with backend via `/.netlify/functions/*`.
     *   **PWA:** Configured with `vite-plugin-pwa` for offline support and installability.
 *   **Backend:** Netlify Functions (TypeScript).
-    *   `netlify/functions/analyze.ts`: The core logic. Validates Auth token, uploads to Storage, calls Gemini, and saves to DB.
+    *   `netlify/functions/analyze.ts`: The core logic. Validates usage limits (IP-based), uploads to Storage, calls Gemini, and saves to DB.
+    *   `netlify/functions/delete-scan.ts`: Deletes a scan from DB and Storage.
     *   `netlify/functions/get-history.ts`: Fetches user history.
     *   `netlify/functions/get-scan.ts`: Fetches single scan for sharing.
 *   **Services:**
@@ -65,11 +66,15 @@ npm run build
 *   **State:** Local React state + Context for Auth (`src/hooks/useAuth.ts`).
 *   **i18n:** `react-i18next`. Strings in `src/i18n.ts`.
 *   **Types:** Shared types in `src/types/index.ts`.
-*   **Security:** Backend functions must verify the `Authorization: Bearer <token>` header.
+*   **Security:** 
+    *   Backend functions verify `Authorization: Bearer <token>`.
+    *   Rate limiting: 3 scans/24h for guests, 50 for registered users (IP-based).
+    *   Manual deletions available in History page.
 
 ## Key Files
 
 *   `src/pages/ScanPage.tsx`: Main logic for camera, upload, analysis, and result display.
-*   `src/components/CameraCapture.tsx`: Handles file input, compression, and cropping (`react-easy-crop`).
-*   `netlify/functions/analyze.ts`: Backend orchestrator.
-*   `src/i18n.ts`: Translations and language detection logic.
+*   `src/components/ShareCard.tsx`: Robust vertical image generation using Inline SVG for absolute alignment.
+*   `src/lib/share.ts`: Unified sharing utility.
+*   `netlify/functions/analyze.ts`: Backend orchestrator with localized errors.
+*   `src/components/Logo.tsx`: Centralized brand logo using the official SVG.
