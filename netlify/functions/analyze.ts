@@ -79,7 +79,7 @@ export default async function handler(req: Request) {
   }
 
   const image = body.image;
-  const language = body.language ?? "en";
+  const language = (body.language ?? "en").slice(0, 2);
   const occasion = body.occasion ?? "general";
 
   if (!image) {

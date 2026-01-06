@@ -1,12 +1,12 @@
 # Outfit Check 👗
 
-**Project Type:** Full-Stack Web Application (Serverless)
+**Project Type:** Full-Stack Web Application (Serverless PWA)
 
 ## Project Overview
 
 **Outfit Check** is an AI-powered fashion coach that provides instant, visually-grounded feedback on outfits. It leverages **Google Gemini 3 Flash** (Preview) to analyze images, identify key items, and offer critiques based on different "personas" (e.g., Editor, Hypebeast, Boho).
 
-The application is designed with a **mobile-first** approach and supports multiple languages (English/Spanish).
+The application is designed as a **mobile-first PWA** and supports multiple languages (English/Spanish).
 
 ## Architecture
 
@@ -14,16 +14,15 @@ The project uses a **Serverless Proxy** architecture to keep API keys secure.
 
 *   **Frontend:** React 19, Vite 7, Tailwind CSS v4.
     *   Handles image capture, display, and UI interactions.
-    *   Communicate with backend via `/.netlify/functions/analyze`.
+    *   Communicate with backend via `/.netlify/functions/*`.
+    *   **PWA:** Configured with `vite-plugin-pwa` for offline support and installability.
 *   **Backend:** Netlify Functions (TypeScript).
-    *   `netlify/functions/analyze.ts`: The core logic.
-        1.  Receives base64 image from frontend.
-        2.  Uploads image to **Supabase Storage** to get a public URL.
-        3.  Calls **Google Gemini API** with the image URL and specific persona prompts.
-        4.  Logs the scan metadata to **Neon (PostgreSQL)**.
-        5.  Returns parsed JSON results to the frontend.
+    *   `netlify/functions/analyze.ts`: The core logic. Validates Auth token, uploads to Storage, calls Gemini, and saves to DB.
+    *   `netlify/functions/get-history.ts`: Fetches user history.
+    *   `netlify/functions/get-scan.ts`: Fetches single scan for sharing.
 *   **Services:**
     *   **AI:** Google Gemini (via `@google/genai`).
+    *   **Auth:** Supabase Auth (Email/Password).
     *   **Storage:** Supabase Storage (bucket: `outfits`).
     *   **Database:** Neon (PostgreSQL) (table: `scans`).
 
@@ -36,7 +35,9 @@ Create a `.env` file in the root directory with the following keys:
 ```env
 GEMINI_API_KEY=...
 SUPABASE_URL=...
-SUPABASE_SERVICE_ROLE_KEY=... # Needed for upload
+SUPABASE_SERVICE_ROLE_KEY=... # Backend
+VITE_SUPABASE_URL=... # Frontend
+VITE_SUPABASE_ANON_KEY=... # Frontend
 DATABASE_URL=...
 ```
 
@@ -46,29 +47,29 @@ npm install
 ```
 
 ### 3. Run Development Server
-**Important:** Use `netlify dev` instead of `npm run dev` or `vite` to ensure the Netlify Functions are emulated correctly and environment variables are injected.
+**Important:** Use `netlify dev` to emulate the full serverless environment.
 
 ```bash
 netlify dev
 ```
-This will start the local server (usually at `http://localhost:8888`).
+Local: `http://localhost:8888`
 
-### 4. Other Commands
-*   **Build:** `npm run build` (runs `tsc` and `vite build`).
-*   **Lint:** `npm run lint`.
+### 4. Build
+```bash
+npm run build
+```
 
 ## Development Conventions
 
-*   **Styling:** Tailwind CSS v4 is used for all styling.
-*   **State Management:** Local React state (`useState`) is used for this scale.
-*   **Internationalization:** Use `react-i18next`. All user-facing strings should be wrapped in `t('key')`.
-*   **Backend Communication:** The frontend uses `axios` to POST to `/.netlify/functions/analyze`.
-*   **Type Safety:** TypeScript is strictly enforced. Shared interfaces for API responses should be maintained.
-*   **Database Changes:** If the schema for the `scans` table needs to change, update `scripts/reset_scans_table.sql` and run it against the Neon database.
+*   **Styling:** Tailwind CSS v4. *Note:* Avoid `oklch` colors in components rendered to canvas (`html2canvas`) like `ShareCard.tsx`.
+*   **State:** Local React state + Context for Auth (`src/hooks/useAuth.ts`).
+*   **i18n:** `react-i18next`. Strings in `src/i18n.ts`.
+*   **Types:** Shared types in `src/types/index.ts`.
+*   **Security:** Backend functions must verify the `Authorization: Bearer <token>` header.
 
 ## Key Files
 
-*   `src/App.tsx`: Main application component and UI logic.
-*   `netlify/functions/analyze.ts`: Backend function orchestrating AI, Storage, and DB.
-*   `spec/TECH_SPEC.md`: Detailed technical specification and schema.
-*   `spec/PROMPTS.md`: System prompts used for the different personas.
+*   `src/pages/ScanPage.tsx`: Main logic for camera, upload, analysis, and result display.
+*   `src/components/CameraCapture.tsx`: Handles file input, compression, and cropping (`react-easy-crop`).
+*   `netlify/functions/analyze.ts`: Backend orchestrator.
+*   `src/i18n.ts`: Translations and language detection logic.

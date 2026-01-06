@@ -21,9 +21,16 @@
 - [x] Implement "Share" functionality (Native Share API or Copy Link).
 - [x] Add Infinite Scroll to History (Initial load of 20 implemented).
 
-## Future / Polish
-- [ ] Swipe-to-delete in History.
+## Phase 4: Polish & Features
+- [ ] Make the PWA installable.
+- [ ] Fix share feature (oklch error).
+- [ ] Adapt and use new logo.
 - [ ] Enhanced Scanning Animation (Laser Line).
 - [ ] Persona-specific Theming (Editor/Hypebeast/Boho).
-- [ ] Fix share feature. The image is a full blue background. 
-- [ ] Onboarding descripting the personas
+- [ ] Onboarding describing the personas.
+- [ ] Swipe-to-delete in History.
+
+## Known Challenges & Context
+- **iOS PWA:** Requires `navigateFallbackDenylist` in `vite.config.ts` to avoid intercepting Netlify Function calls.
+- **html2canvas:** Does not support `oklch` colors (Tailwind v4 default). All shareable components must use inline HEX/RGBA styles.
+- **Camera:** `react-easy-crop` integration requires careful handling of file inputs and state to prevent UI locking.
