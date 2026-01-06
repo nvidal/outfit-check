@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-**Outfit Check** is an AI-powered fashion coach that provides instant, visually-grounded feedback on outfits. It leverages **Google Gemini 3 Flash** (Preview) to analyze images, identify key items, and offer critiques based on different "personas" (e.g., Editor, Hypebeast, Boho).
+**Outfit Check** is an AI-powered fashion coach that provides instant, visually-grounded feedback on outfits. It leverages **Google Gemini 2.5 Flash** to analyze images, identify key items, and offer critiques based on different "personas" (e.g., Editor, Hypebeast, Boho).
 
 The application is designed as a **mobile-first PWA** and supports multiple languages (English/Spanish).
 
