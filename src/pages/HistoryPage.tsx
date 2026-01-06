@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { BottomNav } from '../components/BottomNav';
 import { Logo } from '../components/Logo';
 import { ShareCard } from '../components/ShareCard';
-import { Share2, Sparkles } from 'lucide-react';
+import { Share2, Sparkles, Trash2 } from 'lucide-react';
 import { shareOutfit } from '../lib/share';
 import type { HistoryItem } from '../types';
 
@@ -17,6 +17,7 @@ export const HistoryPage: React.FC = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSharing, setIsSharing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   
   const [shareItem, setShareItem] = useState<HistoryItem | null>(null);
   const shareCardRef = useRef<HTMLDivElement>(null);
@@ -43,6 +44,21 @@ export const HistoryPage: React.FC = () => {
 
     fetchHistory();
   }, [user, navigate, session]);
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setIsDeleting(id);
+    try {
+      const headers = session ? { Authorization: `Bearer ${session.access_token}` } : {};
+      await axios.post('/.netlify/functions/delete-scan', { id }, { headers });
+      setHistory(prev => prev.filter(item => item.id !== id));
+    } catch (err) {
+      console.error('Delete failed', err);
+      alert(t('delete_error', 'Failed to delete scan'));
+    } finally {
+      setIsDeleting(null);
+    }
+  };
 
   const generateAndShare = useCallback(async () => {
     if (!shareCardRef.current || !shareItem) return;
@@ -143,12 +159,21 @@ export const HistoryPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    onClick={(e) => handleShareClick(e, item)}
-                    className="p-3 rounded-full hover:bg-white/10 transition"
-                  >
-                    <Share2 size={20} />
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={(e) => handleShareClick(e, item)}
+                      className="p-3 rounded-full hover:bg-white/10 transition"
+                    >
+                      <Share2 size={20} />
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(e, item.id)}
+                      disabled={isDeleting === item.id}
+                      className={`p-3 rounded-full hover:bg-rose-500/20 transition text-rose-400/70 hover:text-rose-400 ${isDeleting === item.id ? 'animate-pulse' : ''}`}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
               );
             })}
