@@ -1,10 +1,10 @@
 # Outfit Check 👗
 
-An AI-powered fashion coach that provides instant, visually-grounded feedback on your outfits. Powered by **Gemini 3 Flash** and built with a modern full-stack serverless architecture.
+An AI-powered fashion coach that provides instant, visually-grounded feedback on your outfits. Powered by **Gemini 2.5 Flash** and built with a modern full-stack serverless architecture.
 
 ## ✨ Features
 
-- **🤖 Gemini 3 Flash (Preview)**: Leverages Google's latest multimodal model for lightning-fast analysis and spatial awareness.
+- **🤖 Gemini 2.5 Flash**: Leverages Google's latest multimodal model for lightning-fast analysis and spatial awareness.
 - **🎯 Visual Highlights**: Uses `box_2d` coordinates to draw interactive bounding boxes over specific items (shoes, pants, accessories) to show exactly what the AI is critiquing.
 - **🎭 Multiple Personas**: All three personas are evaluated before the results screen loads, then the results page lets you switch instantly via persona tabs; the highest-scoring persona opens first.
   - **La Directora (Editor)**: Professional, sophisticated, and ruthless about proportions and tailoring.
