@@ -1,27 +1,32 @@
 import React from 'react';
-import { Sparkles } from 'lucide-react';
 
 interface LogoProps {
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 export const Logo: React.FC<LogoProps> = ({ className = '', size = 'md' }) => {
-  const sizeClasses = {
-    sm: 'text-xl',
-    md: 'text-3xl',
-    lg: 'text-5xl'
+  const heights = {
+    sm: 'h-6',
+    md: 'h-8',
+    lg: 'h-12',
+    xl: 'h-20'
   };
 
-  const iconSizes = {
-    sm: 20,
-    md: 32,
-    lg: 48
+  const textSizes = {
+    sm: 'text-lg',
+    md: 'text-2xl',
+    lg: 'text-4xl',
+    xl: 'text-6xl'
   };
 
   return (
-    <div className={`font-black tracking-tighter title-font inline-flex items-center justify-center gap-3 whitespace-nowrap ${sizeClasses[size]} ${className}`}>
-      <Sparkles size={iconSizes[size]} style={{ color: '#fcd34d' }} />
+    <div className={`inline-flex items-center justify-center gap-3 whitespace-nowrap font-black tracking-tighter title-font ${textSizes[size]} ${className}`}>
+      <img 
+        src="/logo.svg" 
+        alt="Logo" 
+        className={`${heights[size]} w-auto object-contain`} 
+      />
       <span>OUTFIT CHECK</span>
     </div>
   );

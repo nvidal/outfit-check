@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Logo } from './Logo';
 
 interface ShareCardProps {
   image: string;
@@ -44,10 +44,14 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
         alignItems: 'center'
       }}
     >
-      {/* Header with SVG Text for perfect alignment and zero clipping */}
+      {/* Header with Manual SVG implementation for perfect alignment and scale */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '50px', height: '140px', width: '100%' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <Sparkles size={80} style={{ color: amber300 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <img 
+            src="/logo.svg" 
+            alt="Logo" 
+            style={{ height: '90px', width: '90px', objectContain: 'contain' }} 
+          />
           <svg width="550" height="120" style={{ display: 'block' }}>
             <text 
               x="0" 
