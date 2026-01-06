@@ -29,7 +29,6 @@ export const LoginPage: React.FC = () => {
         });
         if (error) throw error;
         
-        // If email confirmation is disabled, user is logged in immediately
         if (data.session) {
           navigate('/scan');
         } else {
@@ -43,15 +42,18 @@ export const LoginPage: React.FC = () => {
         if (error) throw error;
         navigate('/scan');
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError(String(err));
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleBack = () => {
-    // If there is history, go back, otherwise go to home
     if (window.history.state && window.history.state.idx > 0) {
       navigate(-1);
     } else {

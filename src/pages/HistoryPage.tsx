@@ -1,30 +1,22 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { BottomNav } from '../components/BottomNav';
 import { Logo } from '../components/Logo';
 import { ShareCard } from '../components/ShareCard';
 import { Share2, Sparkles } from 'lucide-react';
 import html2canvas from 'html2canvas';
-
-interface HistoryItem {
-  id: string;
-  image_url: string;
-  ai_results: any[];
-  created_at: string;
-  occasion: string;
-}
+import type { HistoryItem } from '../types';
 
 export const HistoryPage: React.FC = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const navigate = useNavigate();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // State for generating share image
   const [shareItem, setShareItem] = useState<HistoryItem | null>(null);
   const shareCardRef = useRef<HTMLDivElement>(null);
 
@@ -36,10 +28,10 @@ export const HistoryPage: React.FC = () => {
 
     const fetchHistory = async () => {
       try {
+        const headers = session ? { Authorization: `Bearer ${session.access_token}` } : {};
         const response = await axios.post('/.netlify/functions/get-history', {
-          user_id: user.id,
           limit: 20
-        });
+        }, { headers });
         setHistory(response.data);
       } catch (error) {
         console.error('Failed to fetch history', error);
@@ -49,26 +41,18 @@ export const HistoryPage: React.FC = () => {
     };
 
     fetchHistory();
-  }, [user, navigate]);
+  }, [user, navigate, session]);
 
-  // Effect to trigger sharing once the shareItem state is set and the component is rendered
-  useEffect(() => {
-    if (shareItem && shareCardRef.current) {
-      generateAndShare();
-    }
-  }, [shareItem]);
-
-  const generateAndShare = async () => {
+  const generateAndShare = useCallback(async () => {
     if (!shareCardRef.current || !shareItem) return;
 
     try {
-      // Wait a tick for the image to render in the DOM
       await new Promise(resolve => setTimeout(resolve, 100));
 
       const canvas = await html2canvas(shareCardRef.current, {
         scale: 1,
         backgroundColor: '#0a428d',
-        useCORS: true // Important for external images from Supabase
+        useCORS: true
       });
 
       const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
@@ -93,9 +77,15 @@ export const HistoryPage: React.FC = () => {
       console.error('Sharing failed', err);
       alert(t('share_error', 'Could not generate share image'));
     } finally {
-      setShareItem(null); // Reset after sharing
+      setShareItem(null);
     }
-  };
+  }, [shareItem, t]);
+
+  useEffect(() => {
+    if (shareItem && shareCardRef.current) {
+      generateAndShare();
+    }
+  }, [shareItem, generateAndShare]);
 
   const handleShareClick = (e: React.MouseEvent, item: HistoryItem) => {
     e.stopPropagation();
@@ -104,7 +94,6 @@ export const HistoryPage: React.FC = () => {
 
   return (
     <div className="flex h-dvh flex-col bg-[#0a428d] text-white font-sans overflow-hidden relative">
-      {/* Hidden Share Card Render Container */}
       {shareItem && (
         <ShareCard 
           ref={shareCardRef}
@@ -139,7 +128,6 @@ export const HistoryPage: React.FC = () => {
         ) : (
           <div className="flex flex-col gap-4">
             {history.map((item) => {
-              // Find the highest score or default to first
               const bestResult = item.ai_results.reduce((prev, current) => 
                 (prev.score > current.score) ? prev : current
               , item.ai_results[0]);

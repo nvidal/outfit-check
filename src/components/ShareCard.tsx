@@ -10,7 +10,6 @@ interface ShareCardProps {
 }
 
 export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, score, title, improvement_tip }, ref) => {
-  // Define safe colors for html2canvas (HEX or RGBA, no oklch)
   const brandBlue = '#0a428d';
   const amber300 = '#fcd34d';
   const white = '#ffffff';
@@ -45,7 +44,6 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
       >
         <img src={image} alt="Outfit" className="w-full h-full object-cover" />
         
-        {/* Gradient Overlay - Manual standard CSS gradient */}
         <div 
           className="absolute inset-0"
           style={{ background: `linear-gradient(to top, ${brandBlue}, transparent)` }} 

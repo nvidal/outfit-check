@@ -2,46 +2,36 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
-import type { Mode } from '../components/ModeSelector';
+import type { Mode, PersonaAnalysisResult } from '../types';
 import { CameraCapture } from '../components/CameraCapture';
 import { Logo } from '../components/Logo';
 import { BottomNav } from '../components/BottomNav';
 import { SettingsMenu } from '../components/SettingsMenu';
 import { ShareCard } from '../components/ShareCard';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { Sparkles, Lock, Share2, ScanEye, Flame, Flower2, ChevronsDown } from 'lucide-react';
 import html2canvas from 'html2canvas';
 
-interface AnalysisResult {
-  score: number;
-  title: string;
-  critique: string;
-  improvement_tip: string;
-  highlights: {
-    type: 'good' | 'bad';
-    label: string;
-    box_2d: [number, number, number, number];
-    point?: [number, number];
-  }[];
-}
-
-interface PersonaAnalysisResult extends AnalysisResult {
-  persona: Mode;
-}
-
 const MAX_FREE_SCANS = 3;
+
+interface LocationState {
+  image?: string;
+  result?: PersonaAnalysisResult[];
+  id?: string;
+}
 
 export const ScanPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const locationState = location.state as LocationState | null;
+  const { user, session } = useAuth();
   const shareCardRef = useRef<HTMLDivElement>(null);
   
-  const [image, setImage] = useState<string | null>(location.state?.image || null);
+  const [image, setImage] = useState<string | null>(locationState?.image || null);
   const [occasion, setOccasion] = useState<string>('casual');
   const [isLoading, setIsLoading] = useState(false);
-  const [personaResults, setPersonaResults] = useState<PersonaAnalysisResult[] | null>(location.state?.result || null);
+  const [personaResults, setPersonaResults] = useState<PersonaAnalysisResult[] | null>(locationState?.result || null);
   const [selectedPersona, setSelectedPersona] = useState<Mode>('editor');
   const [personaDropdownOpen, setPersonaDropdownOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +45,6 @@ export const ScanPage = () => {
     setScanCount(saved ? parseInt(saved, 10) : 0);
   }, []);
 
-  // Reset state if navigating to /scan without state (e.g. from nav bar)
   useEffect(() => {
     if (!location.state) {
       setImage(null);
@@ -86,15 +75,14 @@ export const ScanPage = () => {
     setLoadingCoords(prev => new Set(prev).add(highlightIndex));
 
     try {
+      const headers = session ? { Authorization: `Bearer ${session.access_token}` } : {};
       const response = await axios.post('/.netlify/functions/analyze', {
         image,
         language: i18n.language,
         occasion,
         persona,
-        highlight_index: highlightIndex,
-        user_id: user?.id,
-        user_name: user?.email
-      });
+        highlight_index: highlightIndex
+      }, { headers });
 
       const coords = response.data.point as [number, number];
 
@@ -125,7 +113,6 @@ export const ScanPage = () => {
   const handleAnalyze = async () => {
     if (!image) return;
     
-    // Guest Limit Check
     if (!user && scanCount >= MAX_FREE_SCANS) {
       setError(t('limit_reached_signup', 'You used your free scans! Sign up to continue.'));
       return;
@@ -135,15 +122,13 @@ export const ScanPage = () => {
     setError(null);
 
     try {
+      const headers = session ? { Authorization: `Bearer ${session.access_token}` } : {};
       const response = await axios.post('/.netlify/functions/analyze', {
         image,
         language: i18n.language,
-        occasion,
-        user_id: user?.id,
-        user_name: user?.email
-      });
+        occasion
+      }, { headers });
 
-      // Increment guest scan count
       if (!user) {
         const newCount = scanCount + 1;
         setScanCount(newCount);
@@ -151,7 +136,6 @@ export const ScanPage = () => {
       }
 
       const results = response.data.results as PersonaAnalysisResult[];
-      // Save ID for sharing
       const scanId = response.data.id;
       
       setPersonaResults(results);
@@ -185,26 +169,27 @@ export const ScanPage = () => {
 
     try {
       const canvas = await html2canvas(shareCardRef.current, {
-        scale: 1, // Already high res at 1080x1920
+        scale: 1,
         backgroundColor: '#0a428d',
+        useCORS: true
       });
 
       const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
       if (!blob) return;
 
       const file = new File([blob], 'outfit-check.jpg', { type: 'image/jpeg' });
+      const currentScanId = (location.state as LocationState | null)?.id;
 
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
           title: 'Outfit Check Result',
           text: `I got a ${displayResult?.score}/10!`,
-          url: location.state?.id ? `${window.location.origin}/share/${location.state.id}` : undefined
+          url: currentScanId ? `${window.location.origin}/share/${currentScanId}` : undefined
         });
       } else {
-        // Fallback: Copy link if ID exists, otherwise download image
-        if (location.state?.id) {
-          await navigator.clipboard.writeText(`${window.location.origin}/share/${location.state.id}`);
+        if (currentScanId) {
+          await navigator.clipboard.writeText(`${window.location.origin}/share/${currentScanId}`);
           alert(t('link_copied', 'Link copied to clipboard!'));
         } else {
           const link = document.createElement('a');
@@ -226,7 +211,6 @@ export const ScanPage = () => {
   if (personaResults && displayResult) {
     return (
       <div className="flex h-dvh flex-col bg-[#0a428d] text-white font-sans overflow-hidden relative">
-        {/* Hidden Share Card */}
         {image && (
           <ShareCard 
             ref={shareCardRef}

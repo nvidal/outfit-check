@@ -25,3 +25,5 @@
 - [ ] Swipe-to-delete in History.
 - [ ] Enhanced Scanning Animation (Laser Line).
 - [ ] Persona-specific Theming (Editor/Hypebeast/Boho).
+- [ ] Fix share feature. The image is a full blue background. 
+- [ ] Onboarding descripting the personas

@@ -4,12 +4,13 @@ import axios from 'axios';
 import { Logo } from '../components/Logo';
 import { Sparkles, ScanEye, Flame, Flower2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type { HistoryItem, PersonaAnalysisResult } from '../types';
 
 export const SharePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<HistoryItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,8 +53,7 @@ export const SharePage: React.FC = () => {
     );
   }
 
-  // Use the best result (highest score) or default to first
-  const result = data.ai_results.reduce((prev: any, current: any) => 
+  const result = data.ai_results.reduce((prev: PersonaAnalysisResult, current: PersonaAnalysisResult) => 
     (prev.score > current.score) ? prev : current
   , data.ai_results[0]);
 

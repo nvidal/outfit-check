@@ -2,6 +2,7 @@ import React, { useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Camera, Check, X, Pencil } from 'lucide-react';
 import Cropper from 'react-easy-crop';
+import type { Area } from 'react-easy-crop';
 import { getCroppedImg } from '../lib/cropImage';
 
 interface CameraCaptureProps {
@@ -16,7 +17,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onError
   const [rawImage, setRawImage] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isCropping, setIsCropping] = useState(false);
 
   // Helper to read file as Data URL
@@ -71,13 +72,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onError
     if (file) {
       try {
         const result = await readFile(file);
-        setRawImage(result); // Store raw for editing later
+        setRawImage(result);
         
-        // Immediately compress and set as preview/capture
         const compressed = await compressImage(result);
+        onCapture(compressed);
         setPreview(compressed);
         onError?.('');
-        onCapture(compressed); // Crucial: This enables the "Check" button
       } catch (e) {
         console.error(e);
         onError?.('Failed to process image');
@@ -87,7 +87,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onError
     }
   };
 
-  const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
+  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
@@ -112,7 +112,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onError
 
   const handleCropCancel = () => {
     setIsCropping(false);
-    // Don't reset rawImage/preview so user returns to previous state
   };
 
   const handleRetake = () => {

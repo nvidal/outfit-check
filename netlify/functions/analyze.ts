@@ -5,7 +5,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -56,7 +56,7 @@ export default async function handler(req: Request) {
     return formatError("Missing storage configuration", 500);
   }
 
-  let body: { image?: string; language?: string; occasion?: string; user_id?: string; user_name?: string };
+  let body: { image?: string; language?: string; occasion?: string };
 
   try {
     body = await req.json();
@@ -64,11 +64,23 @@ export default async function handler(req: Request) {
     return formatError("Invalid JSON", 400);
   }
 
+  let userId: string | null = null;
+  let userName: string | null = null;
+
+  const authHeader = req.headers.get("Authorization");
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error } = await supabaseClient.auth.getUser(token);
+    
+    if (user && !error) {
+      userId = user.id;
+      userName = user.email || null;
+    }
+  }
+
   const image = body.image;
   const language = body.language ?? "en";
   const occasion = body.occasion ?? "general";
-  const userId = body.user_id ?? null;
-  const userName = body.user_name ?? null;
 
   if (!image) {
     return formatError("No image provided", 400);

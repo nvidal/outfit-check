@@ -18,12 +18,9 @@ export async function getCroppedImg(
     return ''
   }
 
-  // set width to double image size to allow for a safe area for the
-  // image to rotate in without being clipped by canvas context
   canvas.width = pixelCrop.width
   canvas.height = pixelCrop.height
 
-  // draw the cropped image
   ctx.drawImage(
     image,
     pixelCrop.x,
@@ -36,6 +33,5 @@ export async function getCroppedImg(
     pixelCrop.height
   )
 
-  // As Base64 string
   return canvas.toDataURL('image/jpeg', 0.9);
 }
