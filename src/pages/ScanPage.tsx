@@ -191,13 +191,19 @@ export const ScanPage = () => {
   if (personaResults && displayResult) {
     return (
       <div className="flex h-dvh flex-col bg-[#0a428d] text-white font-sans overflow-hidden relative">
+        {(isLoading || isSharing) && (
+          <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
+            <p className="text-xl font-black uppercase tracking-widest">
+              {isLoading ? t('analyzing') : t('generating_share', 'Preparing Outfit...')}
+            </p>
+          </div>
+        )}
         {image && (
           <ShareCard 
             ref={shareCardRef}
             image={image}
             score={displayResult.score}
-            title={displayResult.title}
-            critique={displayResult.critique}
             highlights={displayResult.highlights}
           />
         )}

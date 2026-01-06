@@ -1,11 +1,8 @@
 import { forwardRef } from 'react';
-import { Logo } from './Logo';
 
 interface ShareCardProps {
   image: string;
   score: number;
-  title: string;
-  critique: string;
   highlights: {
     type: 'good' | 'bad';
     label: string;
@@ -18,7 +15,6 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
   const amber300 = '#fcd34d';
   const white = '#ffffff';
   const white20 = 'rgba(255, 255, 255, 0.2)';
-  const white10 = 'rgba(255, 255, 255, 0.1)';
 
   const font = '"Space Grotesk", sans-serif';
   const scoreText = `${score}/10`;
@@ -50,7 +46,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
           <img 
             src="/logo.svg" 
             alt="Logo" 
-            style={{ height: '90px', width: '90px', objectContain: 'contain' }} 
+            style={{ height: '90px', width: '90px', objectFit: 'contain' }} 
           />
           <svg width="550" height="120" style={{ display: 'block' }}>
             <text 
@@ -139,7 +135,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
             <div 
               key={i}
               style={{
-                backgroundColor: white10,
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
                 border: `2px solid ${white20}`,
                 borderRadius: '20px',
                 height: '76px',

@@ -90,8 +90,6 @@ export const HistoryPage: React.FC = () => {
           ref={shareCardRef}
           image={shareItem.image_url}
           score={currentBestResult.score}
-          title={currentBestResult.title}
-          critique={currentBestResult.critique}
           highlights={currentBestResult.highlights}
         />
       )}

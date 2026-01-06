@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Logo } from '../components/Logo';
 import { Sparkles, ScanEye, Flame, Flower2, ChevronsDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { HistoryItem, PersonaAnalysisResult, Mode } from '../types';
+import type { HistoryItem, Mode } from '../types';
 
 export const SharePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
