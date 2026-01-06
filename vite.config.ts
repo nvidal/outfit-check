@@ -11,6 +11,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['vite.svg'],
+      workbox: {
+        navigateFallbackDenylist: [/^\/.netlify/],
+      },
       manifest: {
         name: 'Outfit Check',
         short_name: 'OutfitCheck',
