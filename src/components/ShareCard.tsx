@@ -1,80 +1,168 @@
 import { forwardRef } from 'react';
-import { Logo } from './Logo';
 import { Sparkles } from 'lucide-react';
 
 interface ShareCardProps {
   image: string;
   score: number;
   title: string;
-  improvement_tip: string;
+  critique: string;
+  highlights: {
+    type: 'good' | 'bad';
+    label: string;
+    box_2d: [number, number, number, number];
+  }[];
 }
 
-export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, score, title, improvement_tip }, ref) => {
+export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, score, highlights }, ref) => {
   const brandBlue = '#0a428d';
   const amber300 = '#fcd34d';
   const white = '#ffffff';
   const white20 = 'rgba(255, 255, 255, 0.2)';
   const white10 = 'rgba(255, 255, 255, 0.1)';
 
+  const font = '"Space Grotesk", sans-serif';
+  const scoreText = `${score}/10`;
+  const scoreWidth = 240;
+
   return (
     <div 
       ref={ref}
-      className="absolute top-0 left-0 w-[1080px] h-[1920px] flex flex-col p-24 font-sans pointer-events-none opacity-0"
       style={{ 
-        transform: 'scale(0.2)', 
-        transformOrigin: 'top left', 
-        zIndex: -100,
+        position: 'absolute', 
+        left: '-2000px', 
+        top: '0',
+        width: '1080px',
+        height: '1920px',
         backgroundColor: brandBlue,
-        color: white
+        color: white,
+        zIndex: -100,
+        padding: '60px 80px',
+        boxSizing: 'border-box',
+        fontFamily: font,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
       }}
     >
-      <header className="flex justify-between items-center mb-16">
-        <Logo size="lg" className="scale-[2.5] origin-left" />
-        <div 
-          className="font-black text-6xl px-8 py-4 rounded-3xl uppercase tracking-widest"
-          style={{ backgroundColor: amber300, color: brandBlue }}
-        >
-          {score}/10
+      {/* Header with SVG Text for perfect alignment and zero clipping */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '50px', height: '140px', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <Sparkles size={80} style={{ color: amber300 }} />
+          <svg width="550" height="120" style={{ display: 'block' }}>
+            <text 
+              x="0" 
+              y="85" 
+              fontFamily={font} 
+              fontWeight="900" 
+              fontSize="68" 
+              fill="white"
+              letterSpacing="-2"
+            >
+              OUTFIT CHECK
+            </text>
+          </svg>
         </div>
-      </header>
 
-      <div 
-        className="flex-1 relative rounded-[60px] overflow-hidden shadow-2xl mb-16"
-        style={{ borderColor: white20, borderWidth: '8px', borderStyle: 'solid' }}
-      >
-        <img src={image} alt="Outfit" className="w-full h-full object-cover" />
-        
-        <div 
-          className="absolute inset-0"
-          style={{ background: `linear-gradient(to top, ${brandBlue}, transparent)` }} 
-        />
-        
-        <div className="absolute bottom-16 left-16 right-16">
-          <h2 className="text-8xl font-black uppercase tracking-tight leading-none mb-8 drop-shadow-lg">
-            {title}
-          </h2>
-        </div>
+        <svg width={scoreWidth} height="130" style={{ display: 'block' }}>
+          <rect width={scoreWidth} height="130" rx="32" fill={amber300} />
+          <text 
+            x={scoreWidth / 2} 
+            y="92" 
+            textAnchor="middle" 
+            fontFamily={font} 
+            fontWeight="900" 
+            fontSize="72" 
+            fill={brandBlue}
+          >
+            {scoreText}
+          </text>
+        </svg>
       </div>
 
+      {/* Image Container - Strictly 3:4 Ratio (900x1200) */}
       <div 
-        className="p-12 rounded-[50px] flex items-start gap-8"
         style={{ 
-          backgroundColor: white10, 
+          position: 'relative',
+          width: '900px', 
+          height: '1200px',
+          borderRadius: '70px',
           borderColor: white20, 
-          borderWidth: '4px', 
-          borderStyle: 'solid' 
+          borderWidth: '12px', 
+          borderStyle: 'solid',
+          backgroundColor: '#000',
+          overflow: 'hidden',
+          marginBottom: '50px',
+          flexShrink: 0 
         }}
       >
-        <Sparkles size={64} style={{ color: amber300, marginTop: '0.5rem', flexShrink: 0 }} />
-        <div>
-          <p className="text-4xl font-bold uppercase tracking-widest opacity-70 mb-4">Improvement Tip</p>
-          <p className="text-5xl font-medium leading-tight">{improvement_tip}</p>
-        </div>
+        <img 
+          src={image} 
+          alt="Outfit" 
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          crossOrigin="anonymous" 
+        />
+        
+        {/* Render Highlights (Only Boxes) */}
+        {highlights?.map((h, i) => {
+          const [ymin, xmin, ymax, xmax] = h.box_2d;
+          const color = h.type === 'good' ? '#4ade80' : '#f87171';
+          
+          return (
+            <div
+              key={i}
+              style={{
+                position: 'absolute',
+                border: '6px solid',
+                borderColor: color,
+                backgroundColor: h.type === 'good' ? 'rgba(74, 222, 128, 0.15)' : 'rgba(248, 113, 113, 0.15)',
+                borderRadius: '20px',
+                top: `${ymin / 10}%`,
+                left: `${xmin / 10}%`,
+                width: `${(xmax - xmin) / 10}%`,
+                height: `${(ymax - ymin) / 10}%`,
+              }}
+            />
+          );
+        })}
       </div>
 
-      <footer className="mt-16 text-center text-4xl font-medium opacity-50 uppercase tracking-[0.2em]">
-        outfit-check.app
-      </footer>
+      {/* Analysis Highlights List - One per line using SVG rows for absolute centering */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '900px' }}>
+        {highlights?.slice(0, 5).map((h, i) => {
+          const dotColor = h.type === 'good' ? '#4ade80' : '#f87171';
+          
+          return (
+            <div 
+              key={i}
+              style={{
+                backgroundColor: white10,
+                border: `2px solid ${white20}`,
+                borderRadius: '20px',
+                height: '76px',
+                width: '100%',
+                overflow: 'hidden'
+              }}
+            >
+              <svg width="900" height="76">
+                <circle cx="35" cy="38" r="8" fill={dotColor} />
+                <circle cx="35" cy="38" r="14" fill="none" stroke={dotColor} strokeWidth="2" opacity="0.3" />
+                
+                <text 
+                  x="70" 
+                  y="46" 
+                  fontFamily={font} 
+                  fontWeight="700" 
+                  fontSize="28" 
+                  fill="white"
+                  opacity="0.9"
+                >
+                  {h.label.toUpperCase()}
+                </text>
+              </svg>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 });

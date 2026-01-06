@@ -7,7 +7,7 @@ import { BottomNav } from '../components/BottomNav';
 import { Logo } from '../components/Logo';
 import { ShareCard } from '../components/ShareCard';
 import { Share2, Sparkles } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { shareOutfit } from '../lib/share';
 import type { HistoryItem } from '../types';
 
 export const HistoryPage: React.FC = () => {
@@ -46,39 +46,18 @@ export const HistoryPage: React.FC = () => {
   const generateAndShare = useCallback(async () => {
     if (!shareCardRef.current || !shareItem) return;
 
-    try {
-      await new Promise(resolve => setTimeout(resolve, 100));
+    const bestResult = shareItem.ai_results.reduce((prev, current) => 
+      (prev.score > current.score) ? prev : current
+    , shareItem.ai_results[0]);
 
-      const canvas = await html2canvas(shareCardRef.current, {
-        scale: 1,
-        backgroundColor: '#0a428d',
-        useCORS: true
-      });
-
-      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
-      if (!blob) return;
-
-      const file = new File([blob], 'outfit-check.jpg', { type: 'image/jpeg' });
-      const bestResult = shareItem.ai_results[0];
-
-      if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: 'Outfit Check Result',
-          text: `I got a ${bestResult.score}/10!`,
-        });
-      } else {
-        const link = document.createElement('a');
-        link.download = 'outfit-check.jpg';
-        link.href = canvas.toDataURL('image/jpeg', 0.9);
-        link.click();
-      }
-    } catch (err) {
-      console.error('Sharing failed', err);
-      alert(t('share_error', 'Could not generate share image'));
-    } finally {
-      setShareItem(null);
-    }
+    await shareOutfit({
+      element: shareCardRef.current,
+      t,
+      score: bestResult.score,
+      scanId: shareItem.id
+    });
+    
+    setShareItem(null);
   }, [shareItem, t]);
 
   useEffect(() => {
@@ -92,15 +71,20 @@ export const HistoryPage: React.FC = () => {
     setShareItem(item);
   };
 
+  const currentBestResult = shareItem ? shareItem.ai_results.reduce((prev, current) => 
+    (prev.score > current.score) ? prev : current
+  , shareItem.ai_results[0]) : null;
+
   return (
     <div className="flex h-dvh flex-col bg-[#0a428d] text-white font-sans overflow-hidden relative">
-      {shareItem && (
+      {shareItem && currentBestResult && (
         <ShareCard 
           ref={shareCardRef}
           image={shareItem.image_url}
-          score={shareItem.ai_results[0].score}
-          title={shareItem.ai_results[0].title}
-          improvement_tip={shareItem.ai_results[0].improvement_tip}
+          score={currentBestResult.score}
+          title={currentBestResult.title}
+          critique={currentBestResult.critique}
+          highlights={currentBestResult.highlights}
         />
       )}
 
@@ -136,7 +120,7 @@ export const HistoryPage: React.FC = () => {
                 <div 
                   key={item.id}
                   onClick={() => {
-                    navigate('/scan', { state: { result: item.ai_results, image: item.image_url } });
+                    navigate('/scan', { state: { result: item.ai_results, image: item.image_url, id: item.id } });
                   }}
                   className="bg-white/10 border border-white/10 rounded-2xl p-3 flex gap-4 items-center active:scale-98 transition cursor-pointer"
                 >

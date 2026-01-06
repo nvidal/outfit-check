@@ -46,6 +46,7 @@ const resources = {
       "settings": "Settings",
       "logout": "Sign Out",
       "link_copied": "Link copied to clipboard!",
+      "share_message": "Look at my Outfit Check,\nI got a {{score}}/10! What do you think?\n{{url}}",
       "confirm": "Confirm",
       "cancel": "Cancel"
     }
@@ -93,6 +94,7 @@ const resources = {
       "settings": "Ajustes",
       "logout": "Cerrar Sesión",
       "link_copied": "¡Enlace copiado!",
+      "share_message": "Mira mi Outfit Check,\n¡Obtuve un {{score}}/10! ¿Qué te parece?\n{{url}}",
       "confirm": "Confirmar",
       "cancel": "Cancelar"
     }

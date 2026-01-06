@@ -10,7 +10,7 @@ import { SettingsMenu } from '../components/SettingsMenu';
 import { ShareCard } from '../components/ShareCard';
 import { useAuth } from '../hooks/useAuth';
 import { Sparkles, Lock, Share2, ScanEye, Flame, Flower2, ChevronsDown } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { shareOutfit } from '../lib/share';
 
 const MAX_FREE_SCANS = 3;
 
@@ -18,6 +18,7 @@ interface LocationState {
   image?: string;
   result?: PersonaAnalysisResult[];
   id?: string;
+  language?: string;
 }
 
 export const ScanPage = () => {
@@ -37,6 +38,8 @@ export const ScanPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeHighlight, setActiveHighlight] = useState<number | null>(null);
   const [loadingCoords, setLoadingCoords] = useState<Set<number>>(new Set());
+  const [resultLanguage, setResultLanguage] = useState<string>(locationState?.language || i18n.language);
+  const [currentScanId, setCurrentScanId] = useState<string | null>(locationState?.id || null);
   
   const [scanCount, setScanCount] = useState<number>(0);
 
@@ -122,10 +125,11 @@ export const ScanPage = () => {
     setError(null);
 
     try {
+      const currentLang = i18n.language;
       const headers = session ? { Authorization: `Bearer ${session.access_token}` } : {};
       const response = await axios.post('/.netlify/functions/analyze', {
         image,
-        language: i18n.language,
+        language: currentLang,
         occasion
       }, { headers });
 
@@ -138,8 +142,10 @@ export const ScanPage = () => {
       const results = response.data.results as PersonaAnalysisResult[];
       const scanId = response.data.id;
       
+      setCurrentScanId(scanId);
+      setResultLanguage(currentLang);
       setPersonaResults(results);
-      navigate('/scan', { state: { result: results, image, id: scanId }, replace: true });
+      navigate('/scan', { state: { result: results, image, id: scanId, language: currentLang }, replace: true });
 
       const best = results.length > 0
         ? results.reduce<PersonaAnalysisResult | null>((bestSoFar, current) => {
@@ -165,43 +171,15 @@ export const ScanPage = () => {
   };
 
   const handleShare = async () => {
-    if (!shareCardRef.current) return;
+    if (!shareCardRef.current || !displayResult) return;
 
-    try {
-      const canvas = await html2canvas(shareCardRef.current, {
-        scale: 1,
-        backgroundColor: '#0a428d',
-        useCORS: true
-      });
-
-      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
-      if (!blob) return;
-
-      const file = new File([blob], 'outfit-check.jpg', { type: 'image/jpeg' });
-      const currentScanId = (location.state as LocationState | null)?.id;
-
-      if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: 'Outfit Check Result',
-          text: `I got a ${displayResult?.score}/10!`,
-          url: currentScanId ? `${window.location.origin}/share/${currentScanId}` : undefined
-        });
-      } else {
-        if (currentScanId) {
-          await navigator.clipboard.writeText(`${window.location.origin}/share/${currentScanId}`);
-          alert(t('link_copied', 'Link copied to clipboard!'));
-        } else {
-          const link = document.createElement('a');
-          link.download = 'outfit-check.jpg';
-          link.href = canvas.toDataURL('image/jpeg', 0.9);
-          link.click();
-        }
-      }
-    } catch (err) {
-      console.error('Sharing failed', err);
-      alert(t('share_error', 'Could not generate share image'));
-    }
+    await shareOutfit({
+      element: shareCardRef.current,
+      t,
+      score: displayResult.score,
+      scanId: currentScanId || undefined,
+      language: resultLanguage
+    });
   };
 
   const occasionOptions = ['casual', 'work', 'date'];
@@ -217,7 +195,8 @@ export const ScanPage = () => {
             image={image}
             score={displayResult.score}
             title={displayResult.title}
-            improvement_tip={displayResult.improvement_tip}
+            critique={displayResult.critique}
+            highlights={displayResult.highlights}
           />
         )}
 

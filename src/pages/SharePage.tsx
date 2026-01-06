@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Logo } from '../components/Logo';
-import { Sparkles, ScanEye, Flame, Flower2 } from 'lucide-react';
+import { Sparkles, ScanEye, Flame, Flower2, ChevronsDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { HistoryItem, PersonaAnalysisResult } from '../types';
+import type { HistoryItem, PersonaAnalysisResult, Mode } from '../types';
 
 export const SharePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -13,12 +13,21 @@ export const SharePage: React.FC = () => {
   const [data, setData] = useState<HistoryItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPersona, setSelectedPersona] = useState<Mode>('editor');
+  const [personaDropdownOpen, setPersonaDropdownOpen] = useState(false);
 
   useEffect(() => {
     const fetchScan = async () => {
       try {
         const response = await axios.post('/.netlify/functions/get-scan', { id });
-        setData(response.data);
+        const scanData = response.data as HistoryItem;
+        setData(scanData);
+        
+        // Auto-select the best persona initially
+        const best = scanData.ai_results.reduce((prev, current) => 
+          (prev.score > current.score) ? prev : current
+        , scanData.ai_results[0]);
+        setSelectedPersona(best.persona);
       } catch (err) {
         console.error(err);
         setError('Outfit check not found.');
@@ -53,14 +62,46 @@ export const SharePage: React.FC = () => {
     );
   }
 
-  const result = data.ai_results.reduce((prev: PersonaAnalysisResult, current: PersonaAnalysisResult) => 
-    (prev.score > current.score) ? prev : current
-  , data.ai_results[0]);
+  const result = data.ai_results.find(r => r.persona === selectedPersona) || data.ai_results[0];
 
   return (
     <div className="flex h-dvh flex-col bg-[#0a428d] text-white p-6 font-sans overflow-y-auto">
-      <header className="relative mb-6 text-center shrink-0">
+      <header className="relative mb-6 text-center shrink-0 flex items-center justify-between z-50">
+        <div className="w-8" />
         <Logo size="md" />
+        
+        <div className="relative">
+          <button
+            onClick={() => setPersonaDropdownOpen(!personaDropdownOpen)}
+            className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition flex items-center gap-1"
+          >
+            {selectedPersona === 'editor' && <ScanEye size={20} />}
+            {selectedPersona === 'hypebeast' && <Flame size={20} />}
+            {selectedPersona === 'boho' && <Flower2 size={20} />}
+            <ChevronsDown size={14} className="opacity-50" />
+          </button>
+
+          {personaDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-[#0a428d] border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-[60] backdrop-blur-md">
+              {(['editor', 'hypebeast', 'boho'] as Mode[]).map((persona) => {
+                const Icon = persona === 'editor' ? ScanEye : persona === 'hypebeast' ? Flame : Flower2;
+                return (
+                  <button
+                    key={persona}
+                    onClick={() => {
+                      setSelectedPersona(persona);
+                      setPersonaDropdownOpen(false);
+                    }}
+                    className="flex w-full items-center gap-3 px-5 py-4 text-left text-xs font-black uppercase tracking-widest text-white hover:bg-white/10 transition border-b border-white/5 last:border-0"
+                  >
+                    <Icon size={18} />
+                    {t(`mode_${persona}`)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </header>
 
       <main className="flex flex-1 flex-col gap-6 max-w-lg mx-auto w-full pb-8">
@@ -82,7 +123,7 @@ export const SharePage: React.FC = () => {
           </div>
 
           <h2 className="text-2xl font-black tracking-tight">{result.title}</h2>
-          <p className="text-lg leading-snug opacity-90">{result.critique}</p>
+          <p className="text-lg leading-snug opacity-90 italic">"{result.critique}"</p>
 
           <div className="rounded-2xl bg-white/10 p-5 border border-white/20 shadow-lg">
             <div className="flex items-center gap-2 mb-1">
