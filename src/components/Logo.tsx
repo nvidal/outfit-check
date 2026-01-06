@@ -20,7 +20,7 @@ export const Logo: React.FC<LogoProps> = ({ className = '', size = 'md' }) => {
   };
 
   return (
-    <div className={`font-black tracking-tighter title-font inline-flex items-center justify-center gap-3 ${sizeClasses[size]} ${className}`}>
+    <div className={`font-black tracking-tighter title-font inline-flex items-center justify-center gap-3 whitespace-nowrap ${sizeClasses[size]} ${className}`}>
       <Sparkles size={iconSizes[size]} style={{ color: '#fcd34d' }} />
       <span>OUTFIT CHECK</span>
     </div>
