@@ -17,8 +17,26 @@ export default defineConfig({
       },
       workbox: {
         navigateFallbackDenylist: [/^\/.netlify/],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
       },
       manifest: {
+        id: '/',
         name: 'Outfit Check',
         short_name: 'OutfitCheck',
         description: 'Your AI-powered fashion coach. Instant feedback, brutal honesty.',
@@ -31,38 +49,28 @@ export default defineConfig({
         categories: ['lifestyle', 'fashion'],
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: '/pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'pwa-512x512.png',
+            src: '/pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'maskable-icon-512x512.png',
+            src: '/pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable'
+          },
+          {
+            src: '/pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
-          }
-        ],
-        screenshots: [
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            form_factor: 'wide',
-            label: 'Outfit Check App'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            form_factor: 'narrow',
-            label: 'Outfit Check App'
           }
         ]
       }
