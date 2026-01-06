@@ -6,10 +6,12 @@ interface ShareOptions {
   score: number;
   scanId?: string;
   language?: string;
+  onLoading?: (loading: boolean) => void;
 }
 
-export const shareOutfit = async ({ element, t, score, scanId, language }: ShareOptions) => {
+export const shareOutfit = async ({ element, t, score, scanId, language, onLoading }: ShareOptions) => {
   try {
+    onLoading?.(true);
     await document.fonts.ready;
     // Delay to ensure everything is rendered
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -25,7 +27,7 @@ export const shareOutfit = async ({ element, t, score, scanId, language }: Share
     });
 
     const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
-    if (!blob) return;
+    if (!blob) throw new Error('Failed to generate blob');
 
     const file = new File([blob], 'outfit-check.jpg', { type: 'image/jpeg' });
     const shareUrl = scanId ? `${window.location.origin}/share/${scanId}` : '';
@@ -54,6 +56,11 @@ export const shareOutfit = async ({ element, t, score, scanId, language }: Share
     }
   } catch (err) {
     console.error('Sharing failed', err);
-    alert(t('share_error', 'Could not generate share image'));
+    // Don't show error if user cancelled the share sheet
+    if ((err as Error).name !== 'AbortError') {
+      alert(t('share_error', 'Could not generate share image'));
+    }
+  } finally {
+    onLoading?.(false);
   }
 };

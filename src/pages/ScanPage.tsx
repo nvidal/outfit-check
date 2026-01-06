@@ -40,6 +40,7 @@ export const ScanPage = () => {
   const [loadingCoords, setLoadingCoords] = useState<Set<number>>(new Set());
   const [resultLanguage, setResultLanguage] = useState<string>(locationState?.language || i18n.language);
   const [currentScanId, setCurrentScanId] = useState<string | null>(locationState?.id || null);
+  const [isSharing, setIsSharing] = useState(false);
   
   const [scanCount, setScanCount] = useState<number>(0);
 
@@ -178,7 +179,8 @@ export const ScanPage = () => {
       t,
       score: displayResult.score,
       scanId: currentScanId || undefined,
-      language: resultLanguage
+      language: resultLanguage,
+      onLoading: setIsSharing
     });
   };
 
@@ -363,10 +365,12 @@ export const ScanPage = () => {
 
   return (
     <div className="flex h-dvh flex-col bg-[#0a428d] text-white font-sans overflow-hidden">
-      {isLoading && (
+      {(isLoading || isSharing) && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
-          <p className="text-xl font-black uppercase tracking-widest">{t('analyzing')}</p>
+          <p className="text-xl font-black uppercase tracking-widest">
+            {isLoading ? t('analyzing') : t('generating_share', 'Preparing Outfit...')}
+          </p>
         </div>
       )}
 

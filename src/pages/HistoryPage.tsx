@@ -16,6 +16,7 @@ export const HistoryPage: React.FC = () => {
   const navigate = useNavigate();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSharing, setIsSharing] = useState(false);
   
   const [shareItem, setShareItem] = useState<HistoryItem | null>(null);
   const shareCardRef = useRef<HTMLDivElement>(null);
@@ -54,7 +55,8 @@ export const HistoryPage: React.FC = () => {
       element: shareCardRef.current,
       t,
       score: bestResult.score,
-      scanId: shareItem.id
+      scanId: shareItem.id,
+      onLoading: setIsSharing
     });
     
     setShareItem(null);
@@ -77,6 +79,12 @@ export const HistoryPage: React.FC = () => {
 
   return (
     <div className="flex h-dvh flex-col bg-[#0a428d] text-white font-sans overflow-hidden relative">
+      {isSharing && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
+          <p className="text-xl font-black uppercase tracking-widest">{t('generating_share', 'Preparing Outfit...')}</p>
+        </div>
+      )}
       {shareItem && currentBestResult && (
         <ShareCard 
           ref={shareCardRef}

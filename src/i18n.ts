@@ -10,6 +10,7 @@ const resources = {
       "take_photo": "Take Photo",
       "choose_gallery": "Choose from Gallery",
       "analyzing": "Analyzing your fit...",
+      "generating_share": "Preparing your Outfit...",
       "mode_editor": "The Editor",
       "mode_hypebeast": "The Hypebeast",
       "mode_boho": "The Boho Bestie",
@@ -46,6 +47,7 @@ const resources = {
       "settings": "Settings",
       "logout": "Sign Out",
       "link_copied": "Link copied to clipboard!",
+      "install_app": "Install App",
       "share_message": "Look at my Outfit Check,\nI got a {{score}}/10! What do you think?\n{{url}}",
       "confirm": "Confirm",
       "cancel": "Cancel"
@@ -58,6 +60,7 @@ const resources = {
       "take_photo": "Tomar Foto",
       "choose_gallery": "Elegir de Galería",
       "analyzing": "Analizando tu outfit...",
+      "generating_share": "Preparando tu Outfit...",
       "mode_editor": "La Editora",
       "mode_hypebeast": "El Cool",
       "mode_boho": "Amiga Boho",
@@ -94,6 +97,7 @@ const resources = {
       "settings": "Ajustes",
       "logout": "Cerrar Sesión",
       "link_copied": "¡Enlace copiado!",
+      "install_app": "Instalar App",
       "share_message": "Mira mi Outfit Check,\n¡Obtuve un {{score}}/10! ¿Qué te parece?\n{{url}}",
       "confirm": "Confirmar",
       "cancel": "Cancelar"

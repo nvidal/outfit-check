@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, LogOut, Globe, User } from 'lucide-react';
+import { Settings, LogOut, Globe, User, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { usePWA } from '../hooks/usePWA';
 
 export const SettingsMenu: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user, signOut } = useAuth();
+  const { isInstallable, install } = usePWA();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -58,6 +60,22 @@ export const SettingsMenu: React.FC = () => {
               <Globe size={18} />
               <span>{i18n.language === 'en' ? 'Español' : 'English'}</span>
             </button>
+
+            {isInstallable && (
+              <>
+                <div className="h-px bg-gray-100 my-1" />
+                <button
+                  onClick={() => {
+                    install();
+                    setIsOpen(false);
+                  }}
+                  className="w-full px-4 py-3 flex items-center gap-3 text-sm font-bold uppercase tracking-wide hover:bg-gray-100 transition text-left text-amber-600"
+                >
+                  <Download size={18} />
+                  <span>{t('install_app', 'Install App')}</span>
+                </button>
+              </>
+            )}
 
             <div className="h-px bg-gray-100 my-1" />
 
