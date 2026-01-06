@@ -81,7 +81,8 @@ export default async function handler(req: Request) {
     return formatError("Image exceeds 6 MB limit", 413);
   }
 
-  const fileName = `${Date.now()}-${randomUUID()}.${getExtension(mimeType)}`;
+  const folder = userId ? userId : 'guest';
+  const fileName = `${folder}/${Date.now()}-${randomUUID()}.${getExtension(mimeType)}`;
 
   try {
     const { error: uploadError } = await supabaseClient.storage
@@ -202,8 +203,8 @@ Return raw JSON only. Do not use Markdown code blocks.
     await client.connect();
 
     try {
-      await client.query(
-        "INSERT INTO scans (image_url, language, occasion, user_id, user_name, ai_results) VALUES ($1, $2, $3, $4, $5, $6)",
+      const dbRes = await client.query(
+        "INSERT INTO scans (image_url, language, occasion, user_id, user_name, ai_results) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
         [
           imageUrl,
           language,
@@ -213,13 +214,14 @@ Return raw JSON only. Do not use Markdown code blocks.
           JSON.stringify(personaResults),
         ],
       );
+      const insertedId = dbRes.rows[0].id;
+      
+      return new Response(JSON.stringify({ id: insertedId, results: personaResults }), {
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
     } finally {
       await client.end();
     }
-
-    return new Response(JSON.stringify(personaResults), {
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    });
   } catch (error) {
     console.error("error processing outfit", error);
     if (error instanceof Error && error.message.includes("Failed to get")) {
