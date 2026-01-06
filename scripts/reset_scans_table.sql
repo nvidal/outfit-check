@@ -13,3 +13,11 @@ CREATE TABLE scans (
   ai_results JSONB NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+
+-- Añadir columna para rastrear la IP y mejorar la seguridad
+ALTER TABLE scans ADD COLUMN IF NOT EXISTS ip_address TEXT;
+
+-- Opcional: Crear un índice para que el rate limiting sea ultra rápido
+CREATE INDEX IF NOT EXISTS idx_scans_ip_created ON scans (ip_address, created_at);
+CREATE INDEX IF NOT EXISTS idx_scans_user_created ON scans (user_id, created_at);

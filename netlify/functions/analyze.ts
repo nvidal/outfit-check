@@ -12,17 +12,49 @@ const CORS_HEADERS = {
 const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET ?? "outfits";
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabaseClient = supabaseUrl && supabaseKey
-  ? createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
-  : null;
+const TRANSLATIONS: Record<string, any> = {
+  en: {
+    storage_config: "Missing storage configuration",
+    invalid_json: "Invalid JSON",
+    no_image: "No image provided",
+    image_too_large: "Image exceeds 6 MB limit",
+    limit_user: "Daily limit reached. Try again tomorrow.",
+    limit_guest: "Guest limit reached. Please sign up to continue!",
+    api_key: "Missing API Key",
+    ai_empty: "Empty response from AI",
+    db_url: "Missing DATABASE_URL",
+    storage_fail: "Storage upload failed",
+    process_fail: "Failed to process outfit",
+  },
+  es: {
+    storage_config: "Configuración de almacenamiento faltante",
+    invalid_json: "JSON inválido",
+    no_image: "No se proporcionó ninguna imagen",
+    image_too_large: "La imagen excede el límite de 6 MB",
+    limit_user: "Límite diario alcanzado. Intenta de nuevo mañana.",
+    limit_guest: "¡Límite de invitado alcanzado! Regístrate para continuar.",
+    api_key: "Falta la clave de API",
+    ai_empty: "Respuesta vacía de la IA",
+    db_url: "Falta DATABASE_URL",
+    storage_fail: "Error al subir al almacenamiento",
+    process_fail: "Error al procesar el outfit",
+  }
+};
 
-const formatError = (message: string, status: number) =>
-  new Response(JSON.stringify({ error: message }), {
+const getLang = (req: Request, bodyLang?: string) => {
+  if (bodyLang && TRANSLATIONS[bodyLang.slice(0, 2)]) return bodyLang.slice(0, 2);
+  const acceptLang = req.headers.get("accept-language");
+  if (acceptLang && acceptLang.startsWith("es")) return "es";
+  return "en";
+};
+
+const formatError = (key: string, status: number, lang: string) => {
+  const message = TRANSLATIONS[lang][key] || TRANSLATIONS["en"][key] || key;
+  return new Response(JSON.stringify({ error: message }), {
     status,
     headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
   });
+};
 
 const parseImagePayload = (input: string) => {
   const match = input.match(/^data:(image\/[a-zA-Z+\-.]+);base64,(.+)$/);
@@ -52,16 +84,25 @@ export default async function handler(req: Request) {
     });
   }
 
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseClient = supabaseUrl && supabaseKey
+    ? createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
+    : null;
+
+  // Initial lang detection from headers
+  let lang = getLang(req);
+
   if (!supabaseClient) {
-    return formatError("Missing storage configuration", 500);
+    return formatError("storage_config", 500, lang);
   }
 
-  let body: { image?: string; language?: string; occasion?: string };
-
+  let body: { image?: string; language?: string; occasion?: string } = {};
   try {
     body = await req.json();
+    lang = getLang(req, body.language); // Refine lang with body if available
   } catch {
-    return formatError("Invalid JSON", 400);
+    return formatError("invalid_json", 400, lang);
   }
 
   let userId: string | null = null;
@@ -78,25 +119,51 @@ export default async function handler(req: Request) {
     }
   }
 
-  const image = body.image;
-  const language = (body.language ?? "en").slice(0, 2);
-  const occasion = body.occasion ?? "general";
-
-  if (!image) {
-    return formatError("No image provided", 400);
+  const clientIp = req.headers.get("x-forwarded-for")?.split(',')[0] || "unknown";
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    return formatError("db_url", 500, lang);
   }
 
-  const { mimeType, base64 } = parseImagePayload(image);
-  const buffer = Buffer.from(base64, "base64");
-
-  if (buffer.length > MAX_IMAGE_BYTES) {
-    return formatError("Image exceeds 6 MB limit", 413);
-  }
-
-  const folder = userId ? userId : 'guest';
-  const fileName = `${folder}/${Date.now()}-${randomUUID()}.${getExtension(mimeType)}`;
+  const dbClient = new Client({ connectionString: dbUrl });
+  await dbClient.connect();
 
   try {
+    const usageRes = await dbClient.query(
+      `SELECT COUNT(*) FROM scans 
+       WHERE (ip_address = $1 OR user_id = $2) 
+       AND created_at > NOW() - INTERVAL '24 hours'`,
+      [clientIp, userId]
+    );
+    
+    const count = parseInt(usageRes.rows[0].count);
+    const LIMIT = userId ? 50 : 3;
+
+    if (count >= LIMIT) {
+      await dbClient.end();
+      return formatError(userId ? "limit_user" : "limit_guest", 429, lang);
+    }
+
+    const image = body.image;
+    const language = (body.language ?? "en").slice(0, 2);
+    const occasion = body.occasion ?? "general";
+
+    if (!image) {
+      await dbClient.end();
+      return formatError("no_image", 400, lang);
+    }
+
+    const { mimeType, base64 } = parseImagePayload(image);
+    const buffer = Buffer.from(base64, "base64");
+
+    if (buffer.length > MAX_IMAGE_BYTES) {
+      await dbClient.end();
+      return formatError("image_too_large", 413, lang);
+    }
+
+    const folder = userId ? userId : 'guest';
+    const fileName = `${folder}/${Date.now()}-${randomUUID()}.${getExtension(mimeType)}`;
+
     const { error: uploadError } = await supabaseClient.storage
       .from(SUPABASE_BUCKET)
       .upload(fileName, buffer, { contentType: mimeType });
@@ -117,7 +184,7 @@ export default async function handler(req: Request) {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return formatError("Missing API Key", 500);
+      return formatError("api_key", 500, lang);
     }
 
     const ai = new GoogleGenAI({ apiKey });
@@ -206,39 +273,30 @@ Return raw JSON only. Do not use Markdown code blocks.
       };
     }));
 
-    const dbUrl = process.env.DATABASE_URL;
-    if (!dbUrl) {
-      return formatError("Missing DATABASE_URL", 500);
-    }
-
-    const client = new Client({ connectionString: dbUrl });
-    await client.connect();
-
-    try {
-      const dbRes = await client.query(
-        "INSERT INTO scans (image_url, language, occasion, user_id, user_name, ai_results) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
-        [
-          imageUrl,
-          language,
-          occasion,
-          userId,
-          userName,
-          JSON.stringify(personaResults),
-        ],
-      );
-      const insertedId = dbRes.rows[0].id;
-      
-      return new Response(JSON.stringify({ id: insertedId, results: personaResults }), {
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
-    } finally {
-      await client.end();
-    }
+    const dbRes = await dbClient.query(
+      "INSERT INTO scans (image_url, language, occasion, user_id, user_name, ai_results, ip_address) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
+      [
+        imageUrl,
+        language,
+        occasion,
+        userId,
+        userName,
+        JSON.stringify(personaResults),
+        clientIp
+      ],
+    );
+    const insertedId = dbRes.rows[0].id;
+    
+    return new Response(JSON.stringify({ id: insertedId, results: personaResults }), {
+      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("error processing outfit", error);
     if (error instanceof Error && error.message.includes("Failed to get")) {
-      return formatError("Storage upload failed", 502);
+      return formatError("storage_fail", 502, lang);
     }
-    return formatError("Failed to process outfit", 500);
+    return formatError("process_fail", 500, lang);
+  } finally {
+    await dbClient.end();
   }
 }
