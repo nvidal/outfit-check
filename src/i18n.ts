@@ -24,7 +24,7 @@ const resources = {
       "another_try": "Try another look",
       "persona_label": "Judged by",
       "analysis_error": "Failed to analyze outfit. Please try again.",
-      "landing_subtitle": "Yours AI-powered fashion coaches. Instant feedback, brutal honesty.",
+      "landing_subtitle": "Your AI-powered fashion coaches. Instant feedback, brutal honesty.",
       "landing_cta_primary": "Check your outfit now!",
       "landing_cta_login": "Login",
       "login_title": "Welcome Back",
