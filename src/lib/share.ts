@@ -32,18 +32,33 @@ export const shareOutfit = async ({ element, t, score, scanId, language, onLoadi
 
     const file = new File([blob], 'outfit-check.jpg', { type: 'image/jpeg' });
     const shareUrl = scanId ? `${window.location.origin}/share/${scanId}` : '';
+    const shareText = t('share_message', { 
+      score, 
+      lng: language,
+      url: shareUrl 
+    });
 
     if (navigator.share && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        files: [file],
-        title: t('app_title'),
-        text: t('share_message', { 
-          score, 
-          lng: language,
-          url: shareUrl 
-        }),
-        url: shareUrl || undefined
-      });
+      try {
+        // On iOS, sharing both files and URL can sometimes fail. 
+        // Since the URL is already in the text, we omit the url parameter when sharing files.
+        await navigator.share({
+          files: [file],
+          title: t('app_title'),
+          text: shareText
+        });
+      } catch (shareErr) {
+        // Fallback to just sharing the URL if file sharing failed
+        if ((shareErr as Error).name !== 'AbortError') {
+          await navigator.share({
+            title: t('app_title'),
+            text: shareText,
+            url: shareUrl || undefined
+          });
+        } else {
+          throw shareErr; // Re-throw AbortError so it's handled in the outer catch
+        }
+      }
     } else {
       if (shareUrl) {
         await navigator.clipboard.writeText(shareUrl);
