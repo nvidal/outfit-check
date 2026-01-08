@@ -22,20 +22,36 @@ export const shareOutfit = async ({ element, t, score, scanId, language, onLoadi
     const canvas = await html2canvas(element, {
       scale: 1,
       backgroundColor: '#0a428d',
-      useCORS: true,
+      useCORS: false,  // Disable CORS since we use base64 images
       allowTaint: true,
       width: 720,
       height: 1280,
       logging: false
     });
 
-    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+    console.log('Canvas created successfully:', canvas.width, 'x', canvas.height);
+
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
     if (!blob) throw new Error('Failed to generate blob');
+    
+    console.log('Blob created successfully, size:', blob.size);
 
     const file = new File([blob], 'outfit-check.jpg', { type: 'image/jpeg' });
     const shareUrl = scanId ? `${window.location.origin}/share/${scanId}` : '';
 
-    if (navigator.share && navigator.canShare({ files: [file] })) {
+    // Check if Web Share API is available and can share files
+    let canShareFiles = false;
+    try {
+      // @ts-expect-error - canShare may not exist in all browsers
+      if (navigator.share && navigator.canShare) {
+        canShareFiles = navigator.canShare({ files: [file] });
+      }
+    } catch (e) {
+      console.warn('canShare check failed:', e);
+    }
+    console.log('Can share files:', canShareFiles);
+
+    if (canShareFiles) {
       await navigator.share({
         files: [file],
         title: t('app_title'),
@@ -53,7 +69,7 @@ export const shareOutfit = async ({ element, t, score, scanId, language, onLoadi
       } else {
         const link = document.createElement('a');
         link.download = 'outfit-check.jpg';
-        link.href = canvas.toDataURL('image/jpeg', 0.9);
+        link.href = canvas.toDataURL('image/jpeg', 0.95);
         link.click();
       }
     }

@@ -99,7 +99,6 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
           src={image} 
           alt="Outfit" 
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          crossOrigin="anonymous" 
         />
         
         {/* Render Highlights (Only Boxes) */}
