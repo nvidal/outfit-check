@@ -29,12 +29,16 @@ export const shareOutfit = async ({ element, t, score, scanId, language, onLoadi
       logging: false
     });
 
-    console.log('Canvas created successfully:', canvas.width, 'x', canvas.height);
+    if (import.meta.env.DEV) {
+      console.log('Canvas created successfully:', canvas.width, 'x', canvas.height);
+    }
 
     const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
     if (!blob) throw new Error('Failed to generate blob');
     
-    console.log('Blob created successfully, size:', blob.size);
+    if (import.meta.env.DEV) {
+      console.log('Blob created successfully, size:', blob.size);
+    }
 
     const file = new File([blob], 'outfit-check.jpg', { type: 'image/jpeg' });
     const shareUrl = scanId ? `${window.location.origin}/share/${scanId}` : '';
@@ -42,14 +46,18 @@ export const shareOutfit = async ({ element, t, score, scanId, language, onLoadi
     // Check if Web Share API is available and can share files
     let canShareFiles = false;
     try {
-      // @ts-expect-error - canShare may not exist in all browsers
+      // @ts-expect-error - canShare may not exist in all browsers despite TypeScript types
       if (navigator.share && navigator.canShare) {
         canShareFiles = navigator.canShare({ files: [file] });
       }
     } catch (e) {
-      console.warn('canShare check failed:', e);
+      if (import.meta.env.DEV) {
+        console.warn('canShare check failed:', e);
+      }
     }
-    console.log('Can share files:', canShareFiles);
+    if (import.meta.env.DEV) {
+      console.log('Can share files:', canShareFiles);
+    }
 
     if (canShareFiles) {
       await navigator.share({
