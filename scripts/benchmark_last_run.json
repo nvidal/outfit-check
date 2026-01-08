@@ -1,0 +1,150 @@
+{
+  "Editor Style (Edgy)": [
+    {
+      "persona": "editor",
+      "score": 6,
+      "title": "Dressing Down",
+      "critique": "The dress leans into the 2026 trend of elevated casual wear, but the fabric appears slightly flimsy and the tie closure cheapens the overall look. While wrap dresses are timeless, the execution here lacks the precision tailoring seen on recent runways showcasing similar silhouettes.",
+      "improvement_tip": "Opt for a higher quality natural fiber like linen or silk for a more luxurious drape. Consider a hidden closure for a cleaner, more sophisticated line.",
+      "highlights": [
+        {
+          "type": "bad",
+          "label": "Fabric",
+          "box_2d": [
+            268,
+            333,
+            610,
+            533
+          ]
+        },
+        {
+          "type": "bad",
+          "label": "Tie",
+          "box_2d": [
+            419,
+            572,
+            449,
+            607
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "hypebeast",
+      "score": 7,
+      "title": "Beach Drip Check",
+      "critique": "Okay, this dress has potential, especially with the high slit which is kinda giving that 'Coastal Cool' aesthetic blowing up on TikTok. It's clean, but it needs a *moment*. Imagine this with some chunky platform sandals and layered gold chains, then we talkin'.",
+      "improvement_tip": "Accessorize with statement pieces to elevate the look and create a stronger vibe. Think bold jewelry or designer slides.",
+      "highlights": [
+        {
+          "type": "good",
+          "label": "Slit",
+          "box_2d": [
+            487,
+            466,
+            786,
+            538
+          ]
+        },
+        {
+          "type": "bad",
+          "label": "Accessories",
+          "box_2d": [
+            100,
+            242,
+            450,
+            462
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "boho",
+      "score": 8,
+      "title": "Ocean Goddess Vibes!",
+      "critique": "This dress is so dreamy, giving major mermaid vibes! The flowy fabric and light blue are perfectly channeling the 'oceanic essence' that's trending on Pinterest right now. To make it even more you, add some earthy elements!",
+      "improvement_tip": "Consider a woven belt or some beaded jewelry featuring natural stones. Also, a straw hat would be the perfect finishing touch!",
+      "highlights": [
+        {
+          "type": "good",
+          "label": "Color",
+          "box_2d": [
+            216,
+            237,
+            755,
+            648
+          ]
+        },
+        {
+          "type": "bad",
+          "label": "Belt",
+          "box_2d": [
+            417,
+            564,
+            463,
+            624
+          ]
+        }
+      ]
+    }
+  ],
+  "Casual Style (Comfy)": [
+    {
+      "persona": "editor",
+      "score": 7,
+      "title": "Color Palette Potential",
+      "critique": "The color palette is interesting, nodding to the 'chromatic dressing' trend seen on the 2026 runways. However, the inconsistency in fabric weight and overall tailoring drags it down; some pieces appear quite casual, while others could be elevated with better cut and finish.",
+      "improvement_tip": "Focus on a more cohesive fabric story and ensure each piece is perfectly tailored to flatter the wearer's form.",
+      "highlights": [
+        {
+          "type": "good",
+          "label": "Color Variation",
+          "box_2d": [
+            0,
+            0,
+            999,
+            999
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "hypebeast",
+      "score": 6,
+      "title": "Kinda Basic, TBH",
+      "critique": "Okay, so the colors are kinda hitting, especially with the Y2K-inspired pastel resurgence we're seeing on TikTok in '26. But where's the branding? Where's the hype? Need to add some grails to make this fit actually slap, fam.",
+      "improvement_tip": "Throw in some limited-edition designer sneakers or a statement belt with a crazy buckle to elevate the drip.",
+      "highlights": [
+        {
+          "type": "bad",
+          "label": "Missing brand heat",
+          "box_2d": [
+            0,
+            0,
+            999,
+            999
+          ]
+        }
+      ]
+    },
+    {
+      "persona": "boho",
+      "score": 8,
+      "title": "Earthy Rainbow Vibes!",
+      "critique": "Ooh, honey, I'm feeling these earth-toned pastels so much! They remind me of the 'regenerative earth' color trend Pinterest is pushing this year, all about natural dyes and sustainable materials. Maybe add some pieces made from hemp or organic cotton to really nail the look.",
+      "improvement_tip": "Try layering with a flowy linen scarf or adding a macrame belt to enhance the texture and movement.",
+      "highlights": [
+        {
+          "type": "good",
+          "label": "Natural Colors",
+          "box_2d": [
+            0,
+            0,
+            999,
+            999
+          ]
+        }
+      ]
+    }
+  ]
+}

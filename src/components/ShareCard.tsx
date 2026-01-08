@@ -6,7 +6,8 @@ interface ShareCardProps {
   highlights: {
     type: 'good' | 'bad';
     label: string;
-    box_2d: [number, number, number, number];
+    box_2d?: [number, number, number, number];
+    point_2d?: [number, number];
   }[];
 }
 
@@ -102,27 +103,52 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
           crossOrigin="anonymous" 
         />
         
-        {/* Render Highlights (Only Boxes) */}
+        {/* Render Highlights (Boxes or Points) */}
         {highlights?.map((h, i) => {
-          const [ymin, xmin, ymax, xmax] = h.box_2d;
           const color = h.type === 'good' ? '#4ade80' : '#f87171';
           
-          return (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                border: '6px solid',
-                borderColor: color,
-                backgroundColor: h.type === 'good' ? 'rgba(74, 222, 128, 0.15)' : 'rgba(248, 113, 113, 0.15)',
-                borderRadius: '20px',
-                top: `${ymin / 10}%`,
-                left: `${xmin / 10}%`,
-                width: `${(xmax - xmin) / 10}%`,
-                height: `${(ymax - ymin) / 10}%`,
-              }}
-            />
-          );
+          if (h.point_2d) {
+            const [y, x] = h.point_2d;
+            const transparentColor = h.type === 'good' ? 'rgba(52, 211, 153, 0.7)' : 'rgba(248, 113, 113, 0.7)';
+            const shadowColor = h.type === 'good' ? 'rgba(52, 211, 153, 0.5)' : 'rgba(248, 113, 113, 0.5)';
+            return (
+              <div
+                key={i}
+                style={{
+                  position: 'absolute',
+                  backgroundColor: transparentColor,
+                  borderRadius: '50%',
+                  top: `${y / 10}%`,
+                  left: `${x / 10}%`,
+                  width: '108px', 
+                  height: '108px',
+                  transform: 'translate(-50%, -50%)',
+                  boxShadow: `0 0 20px ${shadowColor}`
+                }}
+              />
+            );
+          }
+
+          if (h.box_2d) {
+            const [ymin, xmin, ymax, xmax] = h.box_2d;
+            return (
+              <div
+                key={i}
+                style={{
+                  position: 'absolute',
+                  border: '6px solid',
+                  borderColor: color,
+                  backgroundColor: h.type === 'good' ? 'rgba(74, 222, 128, 0.15)' : 'rgba(248, 113, 113, 0.15)',
+                  borderRadius: '20px',
+                  top: `${ymin / 10}%`,
+                  left: `${xmin / 10}%`,
+                  width: `${(xmax - xmin) / 10}%`,
+                  height: `${(ymax - ymin) / 10}%`,
+                }}
+              />
+            );
+          }
+          return null;
         })}
       </div>
 

@@ -271,37 +271,71 @@ export const ScanPage = () => {
           </header>
 
           <main className="flex flex-col gap-4 max-w-lg mx-auto w-full">
-            <div className="relative aspect-[3/4] w-3/4 mx-auto max-h-[40vh] overflow-hidden rounded-2xl border-4 border-blue-400/40 shadow-xl shrink-0">
+            <div className="relative aspect-[3/4] w-full mx-auto max-h-[55vh] overflow-hidden rounded-2xl border-4 border-blue-400/40 shadow-xl shrink-0">
               <img src={image!} alt="Outfit" className="h-full w-full object-cover" />
               
               {/* Visual Highlights Overlay */}
               {displayResult.highlights.map((h, i) => {
-                const [ymin, xmin, ymax, xmax] = h.box_2d;
-                const top = ymin / 10;
-                const left = xmin / 10;
-                const width = (xmax - xmin) / 10;
-                const height = (ymax - ymin) / 10;
                 const isActive = activeHighlight === null || activeHighlight === i;
                 
-                return (
-                  <div
-                    key={i}
-                    className={`absolute border-2 rounded-lg transition-all duration-500 
-                      ${h.type === 'good' ? 'border-emerald-400 bg-emerald-400/10' : 'border-rose-400 bg-rose-400/10'}
-                      ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
-                    style={{
-                      top: `${top}%`,
-                      left: `${left}%`,
-                      width: `${width}%`,
-                      height: `${height}%`,
-                    }}
-                  >
-                    <div className={`absolute -top-6 left-0 whitespace-nowrap rounded px-1.5 py-0.5 text-[8px] font-black uppercase tracking-tighter text-white
-                      ${h.type === 'good' ? 'bg-emerald-500' : 'bg-rose-500'}`}>
-                      {h.label}
+                // New Point-based Rendering
+                if (h.point_2d) {
+                  const [y, x] = h.point_2d;
+                  const top = y / 10;
+                  const left = x / 10;
+                  
+                  return (
+                    <div
+                      key={i}
+                      className={`absolute rounded-full transition-all duration-500
+                        ${h.type === 'good' ? 'shadow-[0_0_20px_rgba(52,211,153,0.5)]' : 'shadow-[0_0_20px_rgba(248,113,113,0.5)]'}
+                        ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}
+                      style={{
+                        top: `${top}%`,
+                        left: `${left}%`,
+                        width: '12%', 
+                        paddingBottom: '12%', 
+                        transform: 'translate(-50%, -50%)',
+                        backgroundColor: h.type === 'good' ? 'rgba(52, 211, 153, 0.7)' : 'rgba(248, 113, 113, 0.7)',
+                      }}
+                    >
+                      <div className={`absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded px-1.5 py-0.5 text-[8px] font-black uppercase tracking-tighter text-white
+                        ${h.type === 'good' ? 'bg-emerald-500' : 'bg-rose-500'}`}>
+                        {h.label}
+                      </div>
                     </div>
-                  </div>
-                );
+                  );
+                }
+
+                // Fallback: Box Rendering
+                if (h.box_2d) {
+                  const [ymin, xmin, ymax, xmax] = h.box_2d;
+                  const top = ymin / 10;
+                  const left = xmin / 10;
+                  const width = (xmax - xmin) / 10;
+                  const height = (ymax - ymin) / 10;
+                  
+                  return (
+                    <div
+                      key={i}
+                      className={`absolute border-2 rounded-lg transition-all duration-500 
+                        ${h.type === 'good' ? 'border-emerald-400 bg-emerald-400/10' : 'border-rose-400 bg-rose-400/10'}
+                        ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
+                      style={{
+                        top: `${top}%`,
+                        left: `${left}%`,
+                        width: `${width}%`,
+                        height: `${height}%`,
+                      }}
+                    >
+                      <div className={`absolute -top-6 left-0 whitespace-nowrap rounded px-1.5 py-0.5 text-[8px] font-black uppercase tracking-tighter text-white
+                        ${h.type === 'good' ? 'bg-emerald-500' : 'bg-rose-500'}`}>
+                        {h.label}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
               })}
 
               <div className="absolute bottom-2 right-2 flex items-center gap-2 rounded-lg bg-black/60 px-2 py-1 backdrop-blur-md border border-white/10">

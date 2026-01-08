@@ -1,24 +1,33 @@
 import { useState, useEffect } from 'react';
 
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed';
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
+}
+
 export const usePWA = () => {
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstallable, setIsInstallable] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !window.matchMedia('(display-mode: standalone)').matches;
+    }
+    return false;
+  });
 
   useEffect(() => {
-    const handler = (e: any) => {
+    const handler = (e: Event) => {
       // Prevent the default browser prompt
       e.preventDefault();
       // Save the event so it can be triggered later
-      setInstallPrompt(e);
+      setInstallPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
-
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstallable(false);
-    }
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);

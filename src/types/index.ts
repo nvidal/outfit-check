@@ -8,7 +8,8 @@ export interface AnalysisResult {
   highlights: {
     type: 'good' | 'bad';
     label: string;
-    box_2d: [number, number, number, number];
+    box_2d?: [number, number, number, number];
+    point_2d?: [number, number]; // [y, x] scaled 0-1000
     point?: [number, number];
   }[];
 }
