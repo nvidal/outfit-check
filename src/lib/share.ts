@@ -84,14 +84,17 @@ export const shareOutfit = async ({ element, t, score, scanId, language, onLoadi
     }
   } catch (err) {
     console.error('[Share] Error occurred:', err);
-    console.error('[Share] Error name:', (err as Error).name);
-    console.error('[Share] Error message:', (err as Error).message);
-    console.error('[Share] Error stack:', (err as Error).stack);
+    
+    // Safely extract error properties
+    const error = err instanceof Error ? err : new Error(String(err));
+    console.error('[Share] Error name:', error.name);
+    console.error('[Share] Error message:', error.message);
+    console.error('[Share] Error stack:', error.stack);
     
     // Don't show error if user cancelled the share sheet
-    if ((err as Error).name !== 'AbortError') {
+    if (error.name !== 'AbortError') {
       // Provide more helpful error message for users
-      const errorMsg = (err as Error).message || '';
+      const errorMsg = error.message || '';
       const isCanvasError = errorMsg.includes('blob') || 
                            errorMsg.includes('canvas') || 
                            errorMsg.includes('image');
