@@ -12,7 +12,21 @@ const CORS_HEADERS = {
 const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET ?? "outfits";
 
-const TRANSLATIONS: Record<string, any> = {
+interface TranslationStrings {
+  storage_config: string;
+  invalid_json: string;
+  no_image: string;
+  image_too_large: string;
+  limit_user: string;
+  limit_guest: string;
+  api_key: string;
+  ai_empty: string;
+  db_url: string;
+  storage_fail: string;
+  process_fail: string;
+}
+
+const TRANSLATIONS: Record<string, TranslationStrings> = {
   en: {
     storage_config: "Missing storage configuration",
     invalid_json: "Invalid JSON",
@@ -72,6 +86,10 @@ const getExtension = (mimeType: string) => {
   return "jpg";
 };
 
+interface AIResponse {
+  text: string;
+}
+
 export default async function handler(req: Request) {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: CORS_HEADERS });
@@ -116,6 +134,7 @@ export default async function handler(req: Request) {
     if (user && !error) {
       userId = user.id;
       userName = user.email || null;
+      console.log(`[AUTH] User: ${userId}`);
     }
   }
 
@@ -189,22 +208,6 @@ export default async function handler(req: Request) {
 
     const ai = new GoogleGenAI({ apiKey });
 
-    type PersonaMode = 'editor' | 'hypebeast' | 'boho';
-    const personaConfigs: Array<{ id: PersonaMode; instruction: string }> = [
-      {
-        id: 'editor',
-        instruction: `You are a ruthless fashion editor (La Directora). You care about proportions, tailoring, and fabric quality. Use professional terminology like 'silhouette', 'color palette', 'textural contrast', and 'composition'. Your tone is professional and sophisticated.`,
-      },
-      {
-        id: 'hypebeast',
-        instruction: `You are a Gen Z trend scout (El Cool). You care about silhouette, brand relevance, and 'vibes'. Use slang like 'fit', 'flex', 'drip', 'grail', 'clean'. Focus on brand synergy and street credibility.`,
-      },
-      {
-        id: 'boho',
-        instruction: `You are a warm, free-spirited stylist (Amiga Boho). You love textures, layers, and earth tones. Talk like a supportive but honest best friend. Use emojis and be very encouraging but direct about what's not working.`,
-      },
-    ];
-
     const regionLabel = language === 'es'
       ? 'Uruguay/Argentina (use local slang like "che", "re", "copado" if appropriate for the persona)'
       : 'Global';
@@ -216,62 +219,107 @@ export default async function handler(req: Request) {
       },
     };
 
-    const personaResults = await Promise.all(personaConfigs.map(async (persona) => {
-      const prompt = `
+    const prompt = `
 **Role:**
 You are an expert Personal Stylist AI.
 Current Year: 2026.
-Trend Knowledge: High (Aware of Gorpcore, Y2K, Old Money, etc).
 
-**The Persona You Must Act As:**
-${persona.instruction}
+**Task:**
+Analyze the attached outfit image.
+1. **CRITICAL:** Use Google Search to identify specific 2026 trends (Runway, TikTok, Pinterest) relevant to this look.
+2. Provide a critique from THREE different perspectives (Personas).
 
-**The Context:**
+**Personas:**
+1. **Editor:** Ruthless fashion editor. Cares about proportions, tailoring, and fabric. Professional, sophisticated tone.
+2. **Hypebeast:** Gen Z trend scout. Cares about brands, vibes, and clout. Uses slang ('drip', 'clean', 'fit').
+3. **Boho:** Warm, free-spirited stylist. Cares about texture, earth tones, and flow. Supportive, 'bestie' tone.
+
+**Context:**
 - Occasion: ${occasion}
 - Target Language: ${language}
 - Region: ${regionLabel}
 
-**Task:**
-Analyze the attached image of the outfit.
-1. Identify the key items and their placement.
-2. Evaluate based on your Persona's specific priorities.
-3. Provide a numeric score (1-10).
-4. Identify 3-5 specific "highlights" (points of interest). Each highlight must be either "good" (green) or "bad" (red).
-5. For each highlight, provide normalized coordinates [ymin, xmin, ymax, xmax] (0-1000) that bound the specific item or area.
-
 **Response Format:**
-Return raw JSON only. Do not use Markdown code blocks.
+Return raw JSON only.
 {
-  "score": number,
-  "title": "Short punchy title (max 6 words)",
-  "critique": "2-3 sentences analyzing the fit, color, and vibe.",
-  "improvement_tip": "One concrete, actionable step to fix the outfit.",
-  "highlights": [
+  "results": [
     {
-      "type": "good" | "bad",
-      "label": "Short description (e.g. 'Perfect tailoring', 'Clashing colors')",
-      "box_2d": [ymin, xmin, ymax, xmax]
-    }
+      "persona": "editor",
+      "score": number (1-10),
+      "title": "Short punchy title",
+      "critique": "2-3 sentences. MUST weave in the specific 2026 trend context found via search.",
+      "improvement_tip": "Actionable advice.",
+      "highlights": [
+        { "type": "good"|"bad", "label": "...", "box_2d": [ymin, xmin, ymax, xmax] }
+      ]
+    },
+    { "persona": "hypebeast", ... },
+    { "persona": "boho", ... }
   ]
 }
 `;
 
-      const result = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [prompt, imagePart],
-      });
+    let personaResults = [];
+    
+    // Helper to run AI with timeout race
+    const runAI = async (withTools: boolean): Promise<AIResponse> => {
+       const config: {
+         model: string;
+         contents: (string | { inlineData: { data: string; mimeType: string } })[];
+         tools?: { googleSearchRetrieval: Record<string, unknown> }[];
+       } = {
+         model: "gemini-2.0-flash-exp",
+         contents: [prompt, imagePart],
+       };
+       if (withTools) {
+         config.tools = [{ googleSearchRetrieval: {} }];
+       }
+       return ai.models.generateContent(config) as unknown as Promise<AIResponse>;
+    };
+
+    try {
+      let result: AIResponse;
+      try {
+         // Race: 15s timeout vs AI with Search
+         const timeoutPromise = new Promise<never>((_, reject) => 
+             setTimeout(() => reject(new Error("Timeout")), 15000)
+         );
+         
+         result = await Promise.race([runAI(true), timeoutPromise]);
+         
+         if (!result.text) throw new Error("No text from tool");
+         
+      } catch (e) {
+         console.warn("Search timed out or failed, falling back to fast generation.", e instanceof Error ? e.message : e);
+         // Fallback: Run without search (Fast)
+         const fallbackPrompt = prompt.replace("**CRITICAL:** Use Google Search to identify specific 2026 trends (Runway, TikTok, Pinterest) relevant to this look.", "Evaluate the outfit based on general fashion knowledge.");
+         
+         result = await ai.models.generateContent({
+             model: "gemini-2.0-flash-exp",
+             contents: [fallbackPrompt, imagePart],
+         }) as unknown as AIResponse;
+      }
+
       const responseText = result.text;
       if (!responseText) {
         throw new Error("Empty response from AI");
       }
+      
       const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-      const data = JSON.parse(jsonString);
+      const parsed = JSON.parse(jsonString);
+      
+      if (parsed.results && Array.isArray(parsed.results)) {
+         personaResults = parsed.results;
+      } else if (Array.isArray(parsed)) {
+         personaResults = parsed;
+      } else {
+         throw new Error("Invalid JSON structure");
+      }
 
-      return {
-        persona: persona.id,
-        ...data,
-      };
-    }));
+    } catch (err) {
+      console.error("AI Analysis Failed", err);
+      throw err;
+    }
 
     const dbRes = await dbClient.query(
       "INSERT INTO scans (image_url, language, occasion, user_id, user_name, ai_results, ip_address) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",

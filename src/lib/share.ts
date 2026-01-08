@@ -2,7 +2,7 @@ import html2canvas from 'html2canvas';
 
 interface ShareOptions {
   element: HTMLElement;
-  t: (key: string, options?: any) => string;
+  t: (key: string, options?: string | { [key: string]: string | number | undefined }) => string;
   score: number;
   scanId?: string;
   language?: string;

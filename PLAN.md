@@ -19,6 +19,8 @@
   - [x] i18n (English/Spanish).
   - [x] UI/UX Polish (Tailwind v4).
   - [x] PWA Setup.
+  - [x] Backend Reliability: Added Gemini Search with 15s timeout and fast fallback.
+  - [x] Benchmarking: Validated persona variety and trend awareness.
 
 - [x] **Feature: Share Result**
   - [x] Generate shareable image (canvas).
