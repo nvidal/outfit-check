@@ -171,7 +171,6 @@ export default async function handler(req: Request) {
     const LIMIT = userId ? 50 : 3;
 
     if (count >= LIMIT) {
-      await dbClient.end();
       return formatError(userId ? "limit_user" : "limit_guest", 429, lang);
     }
 
@@ -180,7 +179,6 @@ export default async function handler(req: Request) {
     const occasion = body.occasion ?? "general";
 
     if (!image) {
-      await dbClient.end();
       return formatError("no_image", 400, lang);
     }
 
@@ -188,7 +186,6 @@ export default async function handler(req: Request) {
     const buffer = Buffer.from(base64, "base64");
 
     if (buffer.length > MAX_IMAGE_BYTES) {
-      await dbClient.end();
       return formatError("image_too_large", 413, lang);
     }
 
@@ -197,7 +194,6 @@ export default async function handler(req: Request) {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      await dbClient.end();
       return formatError("api_key", 500, lang);
     }
     const ai = new GoogleGenAI({ apiKey });
