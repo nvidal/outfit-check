@@ -2,7 +2,8 @@ import html2canvas from 'html2canvas';
 
 interface ShareOptions {
   element: HTMLElement;
-  t: (key: string, options?: string | { [key: string]: string | number | undefined }) => string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  t: (key: string, options?: any) => string;
   score: number;
   scanId?: string;
   language?: string;

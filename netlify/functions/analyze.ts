@@ -164,11 +164,11 @@ export default async function handler(req: Request) {
     );
     const queryTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Query Timeout")), 5000));
     
-    // @ts-ignore
+    // @ts-expect-error - Promise.race types are tricky with query result
     const usageRes = await Promise.race([queryPromise, queryTimeout]);
     
     const count = parseInt(usageRes.rows[0].count);
-    const LIMIT = userId ? 50 : 3;
+    const LIMIT = userId ? 150 : 3;
 
     if (count >= LIMIT) {
       return formatError(userId ? "limit_user" : "limit_guest", 429, lang);
@@ -177,6 +177,18 @@ export default async function handler(req: Request) {
     const image = body.image;
     const language = (body.language ?? "en").slice(0, 2);
     const occasion = body.occasion ?? "general";
+    
+    // Allow model override for benchmarking, default to 2.5 Flash Image
+    const ALLOWED_MODELS = [
+      "gemini-2.0-flash-exp", 
+      "gemini-2.5-flash", 
+      "gemini-3-flash-preview",
+      "gemini-2.5-flash-image",
+      "gemini-2.5-flash-lite"
+    ];
+    const selectedModel = (body.model && ALLOWED_MODELS.includes(body.model)) 
+      ? body.model 
+      : "gemini-2.5-flash-image";
 
     if (!image) {
       return formatError("no_image", 400, lang);
@@ -217,7 +229,7 @@ Current Year: 2026.
 
 **Task:**
 Analyze the attached outfit image.
-1. **CRITICAL:** Use Google Search to identify specific 2026 trends (Runway, TikTok, Pinterest) relevant to this look.
+1. **Trend Analysis:** Use your internal knowledge for **2025, 2026, and recent trends**. Use Google Search ONLY if you need to verify a specific, niche, or very recent micro-trend. Prioritize speed and internal knowledge.
 2. Provide a critique from THREE different perspectives (Personas).
 
 **Personas:**
@@ -227,39 +239,57 @@ Analyze the attached outfit image.
 
 **Context:**
 - Occasion: ${occasion}
-- Target Language: ${language}
+- Target Language: ${language.toUpperCase()} (STRICT: All output text MUST be in this language).
 - Region: ${regionLabel}
 
 **Response Format:**
-Return raw JSON only.
 {
   "results": [
     {
       "persona": "editor",
       "score": number (1-10),
-      "title": "Short punchy title",
-      "critique": "3-4 sentences. Detailed. MUST weave in the specific 2026 trend context found via search.",
-      "improvement_tip": "Actionable advice.",
+      "title": "Short punchy title (in ${language})",
+      "critique": "CONCISE: Max 2 sentences. Direct and concrete. Focus on what works and what doesn't. (in ${language})",
+      "improvement_tip": "One actionable, concrete tip. No fluff. (in ${language})",
       "highlights": [
-        { "type": "good"|"bad", "label": "...", "box_2d": [ymin, xmin, ymax, xmax] (scale 0-1000) }
+        { 
+          "type": "good"|"bad", 
+          "label": "Brief label (in ${language})", 
+          "point_2d": [y, x] 
+        }
       ]
     },
     { "persona": "hypebeast", ... },
     { "persona": "boho", ... }
   ]
 }
+
+**Visual Guidelines:**
+- **point_2d**: Return the normalized CENTER point [y, x] of the item.
+- Scale: 0.0 - 1.0 (e.g., [0.5, 0.5] is center of image).
+- Precision: Point must be ON the item.
 `;
 
     const runAI = async (withTools: boolean): Promise<AIResponse> => {
        const config: {
          model: string;
+         generationConfig: { responseMimeType: string; maxOutputTokens: number };
          contents: (string | { inlineData: { data: string; mimeType: string } })[];
          tools?: { googleSearchRetrieval: Record<string, unknown> }[];
        } = {
-         model: "gemini-2.0-flash-exp",
+         model: selectedModel,
+         generationConfig: {
+           responseMimeType: "application/json",
+           maxOutputTokens: 2500,
+         },
          contents: [prompt, imagePart],
        };
-       if (withTools) {
+       if (withTools && selectedModel !== 'gemini-1.5-flash') {
+         // 1.5 Flash might not support tools in the same way or we want to test pure speed? 
+         // Actually 1.5 Flash supports tools, but let's keep it consistent.
+         // If selectedModel is 1.5, we might want to disable tools if that's the intention of "2.5" vs "3.0" (old vs new capabilities).
+         // But for now let's assume both can use tools if available.
+         // However, googleSearchRetrieval is a specific feature. Let's keep it enabled for both if possible.
          config.tools = [{ googleSearchRetrieval: {} }];
        }
        return ai.models.generateContent(config) as unknown as Promise<AIResponse>;
@@ -282,11 +312,14 @@ Return raw JSON only.
            console.warn("Search timed out or failed, falling back to fast generation.", e instanceof Error ? e.message : e);
            // Fallback: Run without search (Fast)
            const fallbackPrompt = prompt
-             .replace("**CRITICAL:** Use Google Search to identify specific 2026 trends (Runway, TikTok, Pinterest) relevant to this look.", "Evaluate the outfit based on general fashion knowledge.")
-             .replace("MUST weave in the specific 2026 trend context found via search.", "Focus on general style principles.");
+             .replace("Use Google Search ONLY if you need to verify a specific, niche, or very recent micro-trend. Prioritize speed and internal knowledge.", "Focus on general style principles.");
            
            result = await ai.models.generateContent({
-               model: "gemini-2.0-flash-exp",
+               model: selectedModel,
+               generationConfig: {
+                 responseMimeType: "application/json",
+                 maxOutputTokens: 2500,
+               },
                contents: [fallbackPrompt, imagePart],
            }) as unknown as AIResponse;
         }
@@ -299,13 +332,33 @@ Return raw JSON only.
         const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
         const parsed = JSON.parse(jsonString);
         
+        let results = [];
         if (parsed.results && Array.isArray(parsed.results)) {
-           return parsed.results;
+           results = parsed.results;
         } else if (Array.isArray(parsed)) {
-           return parsed;
+           results = parsed;
         } else {
            throw new Error("Invalid JSON structure");
         }
+
+        // Normalize points if needed (0-1 -> 0-1000)
+        results = results.map((res: Record<string, unknown>) => {
+           if (res.highlights && Array.isArray(res.highlights)) {
+             res.highlights = res.highlights.map((h: Record<string, unknown>) => {
+               if (h.point_2d && Array.isArray(h.point_2d)) {
+                 const points = h.point_2d as number[];
+                 const isNormalized = points.every((v) => v >= 0 && v <= 1);
+                 if (isNormalized) {
+                   h.point_2d = points.map((v) => Math.round(v * 1000));
+                 }
+               }
+               return h;
+             });
+           }
+           return res;
+        });
+
+        return results;
       } catch (err) {
         console.error("AI Analysis Failed", err);
         throw err;
