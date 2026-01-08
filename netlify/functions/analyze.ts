@@ -260,10 +260,10 @@ Return raw JSON only.
       "persona": "editor",
       "score": number (1-10),
       "title": "Short punchy title",
-      "critique": "2-3 sentences. MUST weave in the specific 2026 trend context found via search.",
+      "critique": "3-4 sentences. Detailed. MUST weave in the specific 2026 trend context found via search.",
       "improvement_tip": "Actionable advice.",
       "highlights": [
-        { "type": "good"|"bad", "label": "...", "box_2d": [ymin, xmin, ymax, xmax] }
+        { "type": "good"|"bad", "label": "...", "box_2d": [ymin, xmin, ymax, xmax] (scale 0-1000) }
       ]
     },
     { "persona": "hypebeast", ... },
@@ -303,7 +303,9 @@ Return raw JSON only.
         } catch (e) {
            console.warn("Search timed out or failed, falling back to fast generation.", e instanceof Error ? e.message : e);
            // Fallback: Run without search (Fast)
-           const fallbackPrompt = prompt.replace("**CRITICAL:** Use Google Search to identify specific 2026 trends (Runway, TikTok, Pinterest) relevant to this look.", "Evaluate the outfit based on general fashion knowledge.");
+           const fallbackPrompt = prompt
+             .replace("**CRITICAL:** Use Google Search to identify specific 2026 trends (Runway, TikTok, Pinterest) relevant to this look.", "Evaluate the outfit based on general fashion knowledge.")
+             .replace("MUST weave in the specific 2026 trend context found via search.", "Focus on general style principles.");
            
            result = await ai.models.generateContent({
                model: "gemini-2.0-flash-exp",
