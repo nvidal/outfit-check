@@ -20,7 +20,12 @@ export const usePWA = () => {
       const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches 
         || (window.navigator as any).standalone === true;
       
-      const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      const ua = window.navigator.userAgent || '';
+      const isIOSDevice =
+        ((/iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream) ||
+          (ua.includes('Macintosh') &&
+            typeof document !== 'undefined' &&
+            'ontouchend' in document));
       
       setIsStandalone(isStandaloneMode);
       setIsIOS(isIOSDevice);
