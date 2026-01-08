@@ -91,6 +91,7 @@ interface AIResponse {
 }
 
 export default async function handler(req: Request) {
+  console.log(`[ANALYZE] Request received.`);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: CORS_HEADERS });
   }
@@ -101,15 +102,19 @@ export default async function handler(req: Request) {
       headers: CORS_HEADERS,
     });
   }
+  console.log(`[ANALYZE] Method check passed.`);
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  console.log(`[ANALYZE] Init Supabase...`);
   const supabaseClient = supabaseUrl && supabaseKey
     ? createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
     : null;
+  console.log(`[ANALYZE] Supabase inited.`);
 
   // Initial lang detection from headers
   let lang = getLang(req);
+  console.log(`[ANALYZE] Lang detected: ${lang}`);
 
   if (!supabaseClient) {
     return formatError("storage_config", 500, lang);
@@ -117,9 +122,12 @@ export default async function handler(req: Request) {
 
   let body: { image?: string; language?: string; occasion?: string } = {};
   try {
+    console.log(`[ANALYZE] Parsing JSON...`);
     body = await req.json();
+    console.log(`[ANALYZE] JSON parsed.`);
     lang = getLang(req, body.language); // Refine lang with body if available
   } catch {
+    console.log(`[ANALYZE] JSON parse failed.`);
     return formatError("invalid_json", 400, lang);
   }
 
@@ -145,22 +153,41 @@ export default async function handler(req: Request) {
   }
 
   const dbClient = new Client({ connectionString: dbUrl });
-  await dbClient.connect();
+  try {
+    console.log(`[ANALYZE] Connecting to DB...`);
+    // Add timeout to DB connect
+    const connectPromise = dbClient.connect();
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("DB Connect Timeout")), 5000));
+    await Promise.race([connectPromise, timeoutPromise]);
+    console.log(`[ANALYZE] DB Connected.`);
+  } catch (err) {
+    console.error(`[ANALYZE] DB Connection Failed:`, err);
+    return formatError("process_fail", 500, lang);
+  }
 
   try {
-    const usageRes = await dbClient.query(
+    console.log(`[ANALYZE] Querying usage...`);
+    // Add timeout to query
+    const queryPromise = dbClient.query(
       `SELECT COUNT(*) FROM scans 
        WHERE (ip_address = $1 OR user_id = $2) 
        AND created_at > NOW() - INTERVAL '24 hours'`,
       [clientIp, userId]
     );
+    const queryTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Query Timeout")), 5000));
+    
+    // @ts-ignore
+    const usageRes = await Promise.race([queryPromise, queryTimeout]);
+    console.log(`[ANALYZE] Usage query done.`);
     
     const count = parseInt(usageRes.rows[0].count);
     const LIMIT = userId ? 50 : 3;
+    console.log(`[ANALYZE] Count: ${count}`);
 
     if (count >= LIMIT) {
-      await dbClient.end();
-      return formatError(userId ? "limit_user" : "limit_guest", 429, lang);
+       console.log(`[ANALYZE] Limit reached (ignoring for debug if commented out)`); 
+      // await dbClient.end();
+      // return formatError(userId ? "limit_user" : "limit_guest", 429, lang);
     }
 
     const image = body.image;
@@ -172,8 +199,10 @@ export default async function handler(req: Request) {
       return formatError("no_image", 400, lang);
     }
 
+    console.log(`[ANALYZE] Parsing image...`);
     const { mimeType, base64 } = parseImagePayload(image);
     const buffer = Buffer.from(base64, "base64");
+    console.log(`[ANALYZE] Image parsed.`);
 
     if (buffer.length > MAX_IMAGE_BYTES) {
       await dbClient.end();
@@ -183,31 +212,15 @@ export default async function handler(req: Request) {
     const folder = userId ? userId : 'guest';
     const fileName = `${folder}/${Date.now()}-${randomUUID()}.${getExtension(mimeType)}`;
 
-    const { error: uploadError } = await supabaseClient.storage
-      .from(SUPABASE_BUCKET)
-      .upload(fileName, buffer, { contentType: mimeType });
-
-    if (uploadError) {
-      throw new Error(uploadError.message);
-    }
-
-    const { data: publicData } = await supabaseClient.storage
-      .from(SUPABASE_BUCKET)
-      .getPublicUrl(fileName);
-
-    if (!publicData?.publicUrl) {
-      throw new Error("Failed to get image url");
-    }
-
-    const imageUrl = publicData.publicUrl;
-
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
+      await dbClient.end();
       return formatError("api_key", 500, lang);
     }
-
     const ai = new GoogleGenAI({ apiKey });
 
+    // --- Prepare AI Promise ---
+    console.log(`[ANALYZE] Starting Parallel Execution...`);
     const regionLabel = language === 'es'
       ? 'Uruguay/Argentina (use local slang like "che", "re", "copado" if appropriate for the persona)'
       : 'Global';
@@ -259,9 +272,6 @@ Return raw JSON only.
 }
 `;
 
-    let personaResults = [];
-    
-    // Helper to run AI with timeout race
     const runAI = async (withTools: boolean): Promise<AIResponse> => {
        const config: {
          model: string;
@@ -277,49 +287,80 @@ Return raw JSON only.
        return ai.models.generateContent(config) as unknown as Promise<AIResponse>;
     };
 
-    try {
-      let result: AIResponse;
+    const aiPromise = (async () => {
       try {
-         // Race: 15s timeout vs AI with Search
-         const timeoutPromise = new Promise<never>((_, reject) => 
-             setTimeout(() => reject(new Error("Timeout")), 15000)
-         );
-         
-         result = await Promise.race([runAI(true), timeoutPromise]);
-         
-         if (!result.text) throw new Error("No text from tool");
-         
-      } catch (e) {
-         console.warn("Search timed out or failed, falling back to fast generation.", e instanceof Error ? e.message : e);
-         // Fallback: Run without search (Fast)
-         const fallbackPrompt = prompt.replace("**CRITICAL:** Use Google Search to identify specific 2026 trends (Runway, TikTok, Pinterest) relevant to this look.", "Evaluate the outfit based on general fashion knowledge.");
-         
-         result = await ai.models.generateContent({
-             model: "gemini-2.0-flash-exp",
-             contents: [fallbackPrompt, imagePart],
-         }) as unknown as AIResponse;
+        let result: AIResponse;
+        try {
+           // Race: 15s timeout vs AI with Search
+           const timeoutPromise = new Promise<never>((_, reject) => 
+               setTimeout(() => reject(new Error("Timeout")), 15000)
+           );
+           
+           result = await Promise.race([runAI(true), timeoutPromise]);
+           
+           if (!result.text) throw new Error("No text from tool");
+           
+        } catch (e) {
+           console.warn("Search timed out or failed, falling back to fast generation.", e instanceof Error ? e.message : e);
+           // Fallback: Run without search (Fast)
+           const fallbackPrompt = prompt.replace("**CRITICAL:** Use Google Search to identify specific 2026 trends (Runway, TikTok, Pinterest) relevant to this look.", "Evaluate the outfit based on general fashion knowledge.");
+           
+           result = await ai.models.generateContent({
+               model: "gemini-2.0-flash-exp",
+               contents: [fallbackPrompt, imagePart],
+           }) as unknown as AIResponse;
+        }
+  
+        const responseText = result.text;
+        if (!responseText) {
+          throw new Error("Empty response from AI");
+        }
+        
+        const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+        const parsed = JSON.parse(jsonString);
+        
+        if (parsed.results && Array.isArray(parsed.results)) {
+           return parsed.results;
+        } else if (Array.isArray(parsed)) {
+           return parsed;
+        } else {
+           throw new Error("Invalid JSON structure");
+        }
+      } catch (err) {
+        console.error("AI Analysis Failed", err);
+        throw err;
       }
+    })();
 
-      const responseText = result.text;
-      if (!responseText) {
-        throw new Error("Empty response from AI");
-      }
-      
-      const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-      const parsed = JSON.parse(jsonString);
-      
-      if (parsed.results && Array.isArray(parsed.results)) {
-         personaResults = parsed.results;
-      } else if (Array.isArray(parsed)) {
-         personaResults = parsed;
-      } else {
-         throw new Error("Invalid JSON structure");
-      }
+    // --- Prepare Storage Promise ---
+    const uploadPromise = (async () => {
+      console.log(`[STORAGE] Starting upload...`);
+      const uploadTimeout = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error("Storage Timeout")), 20000)
+      );
 
-    } catch (err) {
-      console.error("AI Analysis Failed", err);
-      throw err;
-    }
+      const performUpload = async () => {
+        const { error: uploadError } = await supabaseClient.storage
+          .from(SUPABASE_BUCKET)
+          .upload(fileName, buffer, { contentType: mimeType });
+
+        if (uploadError) throw new Error(uploadError.message);
+
+        const { data: publicData } = await supabaseClient.storage
+          .from(SUPABASE_BUCKET)
+          .getPublicUrl(fileName);
+
+        if (!publicData?.publicUrl) throw new Error("Failed to get image url");
+        
+        console.log(`[STORAGE] Upload success: ${publicData.publicUrl}`);
+        return publicData.publicUrl;
+      };
+
+      return Promise.race([performUpload(), uploadTimeout]);
+    })();
+
+    // --- Await Both ---
+    const [personaResults, imageUrl] = await Promise.all([aiPromise, uploadPromise]);
 
     const dbRes = await dbClient.query(
       "INSERT INTO scans (image_url, language, occasion, user_id, user_name, ai_results, ip_address) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
