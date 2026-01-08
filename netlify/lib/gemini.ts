@@ -90,17 +90,23 @@ Analyze the attached outfit image.
   };
 
   const runAI = async (withTools: boolean): Promise<AIResponse> => {
+    const generationConfig: { responseMimeType?: string; maxOutputTokens: number } = {
+      maxOutputTokens: 2500,
+    };
+
+    // gemini-2.5-flash-image does not support strict JSON mode via API param
+    if (selectedModel !== "gemini-2.5-flash-image") {
+      generationConfig.responseMimeType = "application/json";
+    }
+
     const config: {
       model: string;
-      config: { responseMimeType: string; maxOutputTokens: number };
+      config: { responseMimeType?: string; maxOutputTokens: number };
       contents: (string | { inlineData: { data: string; mimeType: string } })[];
       tools?: { googleSearchRetrieval: Record<string, unknown> }[];
     } = {
       model: selectedModel,
-      config: {
-        responseMimeType: "application/json",
-        maxOutputTokens: 2500,
-      },
+      config: generationConfig,
       contents: [prompt, imagePart],
     };
     if (withTools && selectedModel !== 'gemini-1.5-flash') {
@@ -127,12 +133,16 @@ Analyze the attached outfit image.
        const fallbackPrompt = prompt
          .replace("Use Google Search ONLY if you need to verify a specific, niche, or very recent micro-trend. Prioritize speed and internal knowledge.", "Focus on general style principles.");
        
+       const fallbackConfig: { responseMimeType?: string; maxOutputTokens: number } = {
+          maxOutputTokens: 2500,
+       };
+       if (selectedModel !== "gemini-2.5-flash-image") {
+          fallbackConfig.responseMimeType = "application/json";
+       }
+
        result = await ai.models.generateContent({
            model: selectedModel,
-           config: {
-             responseMimeType: "application/json",
-             maxOutputTokens: 2500,
-           },
+           config: fallbackConfig,
            contents: [fallbackPrompt, imagePart],
        }) as unknown as AIResponse;
     }
