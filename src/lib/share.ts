@@ -62,9 +62,14 @@ export const shareOutfit = async ({ element, t, score, scanId, language, onLoadi
     // Don't show error if user cancelled the share sheet
     if ((err as Error).name !== 'AbortError') {
       // Provide more helpful error message for users
-      const errorMessage = (err as Error).message?.includes('blob') 
+      const errorMsg = (err as Error).message || '';
+      const isCanvasError = errorMsg.includes('blob') || 
+                           errorMsg.includes('canvas') || 
+                           errorMsg.includes('image');
+      
+      const errorMessage = isCanvasError
         ? t('share_error_canvas', 'Could not generate image. Try again or contact support.')
-        : t('share_error', 'Could not generate share image');
+        : t('share_error', 'Could not share image');
       alert(errorMessage);
     }
   } finally {
