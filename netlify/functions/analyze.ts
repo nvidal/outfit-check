@@ -91,7 +91,6 @@ interface AIResponse {
 }
 
 export default async function handler(req: Request) {
-  console.log(`[ANALYZE] Request received.`);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: CORS_HEADERS });
   }
@@ -102,19 +101,15 @@ export default async function handler(req: Request) {
       headers: CORS_HEADERS,
     });
   }
-  console.log(`[ANALYZE] Method check passed.`);
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  console.log(`[ANALYZE] Init Supabase...`);
   const supabaseClient = supabaseUrl && supabaseKey
     ? createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
     : null;
-  console.log(`[ANALYZE] Supabase inited.`);
 
   // Initial lang detection from headers
   let lang = getLang(req);
-  console.log(`[ANALYZE] Lang detected: ${lang}`);
 
   if (!supabaseClient) {
     return formatError("storage_config", 500, lang);
@@ -122,12 +117,9 @@ export default async function handler(req: Request) {
 
   let body: { image?: string; language?: string; occasion?: string } = {};
   try {
-    console.log(`[ANALYZE] Parsing JSON...`);
     body = await req.json();
-    console.log(`[ANALYZE] JSON parsed.`);
     lang = getLang(req, body.language); // Refine lang with body if available
   } catch {
-    console.log(`[ANALYZE] JSON parse failed.`);
     return formatError("invalid_json", 400, lang);
   }
 
@@ -142,7 +134,6 @@ export default async function handler(req: Request) {
     if (user && !error) {
       userId = user.id;
       userName = user.email || null;
-      console.log(`[AUTH] User: ${userId}`);
     }
   }
 
@@ -154,19 +145,16 @@ export default async function handler(req: Request) {
 
   const dbClient = new Client({ connectionString: dbUrl });
   try {
-    console.log(`[ANALYZE] Connecting to DB...`);
     // Add timeout to DB connect
     const connectPromise = dbClient.connect();
     const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("DB Connect Timeout")), 5000));
     await Promise.race([connectPromise, timeoutPromise]);
-    console.log(`[ANALYZE] DB Connected.`);
   } catch (err) {
     console.error(`[ANALYZE] DB Connection Failed:`, err);
     return formatError("process_fail", 500, lang);
   }
 
   try {
-    console.log(`[ANALYZE] Querying usage...`);
     // Add timeout to query
     const queryPromise = dbClient.query(
       `SELECT COUNT(*) FROM scans 
@@ -178,16 +166,13 @@ export default async function handler(req: Request) {
     
     // @ts-ignore
     const usageRes = await Promise.race([queryPromise, queryTimeout]);
-    console.log(`[ANALYZE] Usage query done.`);
     
     const count = parseInt(usageRes.rows[0].count);
     const LIMIT = userId ? 50 : 3;
-    console.log(`[ANALYZE] Count: ${count}`);
 
     if (count >= LIMIT) {
-       console.log(`[ANALYZE] Limit reached (ignoring for debug if commented out)`); 
-      // await dbClient.end();
-      // return formatError(userId ? "limit_user" : "limit_guest", 429, lang);
+      await dbClient.end();
+      return formatError(userId ? "limit_user" : "limit_guest", 429, lang);
     }
 
     const image = body.image;
@@ -199,10 +184,8 @@ export default async function handler(req: Request) {
       return formatError("no_image", 400, lang);
     }
 
-    console.log(`[ANALYZE] Parsing image...`);
     const { mimeType, base64 } = parseImagePayload(image);
     const buffer = Buffer.from(base64, "base64");
-    console.log(`[ANALYZE] Image parsed.`);
 
     if (buffer.length > MAX_IMAGE_BYTES) {
       await dbClient.end();
@@ -220,7 +203,7 @@ export default async function handler(req: Request) {
     const ai = new GoogleGenAI({ apiKey });
 
     // --- Prepare AI Promise ---
-    console.log(`[ANALYZE] Starting Parallel Execution...`);
+    const regionLabel = language === 'es'
     const regionLabel = language === 'es'
       ? 'Uruguay/Argentina (use local slang like "che", "re", "copado" if appropriate for the persona)'
       : 'Global';
