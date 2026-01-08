@@ -204,7 +204,6 @@ export default async function handler(req: Request) {
 
     // --- Prepare AI Promise ---
     const regionLabel = language === 'es'
-    const regionLabel = language === 'es'
       ? 'Uruguay/Argentina (use local slang like "che", "re", "copado" if appropriate for the persona)'
       : 'Global';
 
