@@ -11,14 +11,32 @@ interface BeforeInstallPromptEvent extends Event {
 
 export const usePWA = () => {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstallable, setIsInstallable] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return !window.matchMedia('(display-mode: standalone)').matches;
-    }
-    return false;
-  });
+  const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [isInstallable, setIsInstallable] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches 
+        || (window.navigator as any).standalone === true;
+      
+      const ua = window.navigator.userAgent || '';
+      const isIOSDevice =
+        ((/iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream) ||
+          (ua.includes('Macintosh') &&
+            typeof document !== 'undefined' &&
+            'ontouchend' in document));
+      
+      setIsStandalone(isStandaloneMode);
+      setIsIOS(isIOSDevice);
+      
+      // On iOS, we can't programmatically trigger the prompt, 
+      // but we want to know if it's installable (not already installed)
+      if (isIOSDevice && !isStandaloneMode) {
+        setIsInstallable(true);
+      }
+    }
+
     const handler = (e: Event) => {
       // Prevent the default browser prompt
       e.preventDefault();
@@ -33,6 +51,11 @@ export const usePWA = () => {
   }, []);
 
   const install = async () => {
+    if (isIOS) {
+      // For iOS, we just return true to let the UI know it should show instructions
+      return true;
+    }
+
     if (!installPrompt) return;
 
     // Show the native prompt
@@ -48,5 +71,5 @@ export const usePWA = () => {
     setInstallPrompt(null);
   };
 
-  return { isInstallable, install };
+  return { isInstallable, install, isIOS, isStandalone };
 };
