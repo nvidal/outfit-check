@@ -73,7 +73,8 @@ export const SettingsMenu: React.FC = () => {
               </p>
               <button
                 onClick={() => setShowIOSInstructions(false)}
-                className="mt-2 w-full py-2 bg-[#0a428d] text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em]"
+                className="mt-2 w-full py-2 bg-[#0a428d] text-white rounded-xl text-xs font-black uppercase tracking-[0.2em]"
+                aria-label={t('close_ios_instructions', 'Close installation instructions')}
               >
                 {t('confirm', 'Got it')}
               </button>
