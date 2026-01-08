@@ -19,6 +19,7 @@ export const shareOutfit = async ({ element, t, score, scanId, language, onLoadi
 
     // Use iOS-safe canvas dimensions (720x1280 = 921,600 pixels, well below iOS limits)
     // This prevents "image cannot be created" errors on iOS Safari
+    console.log('[Share] Starting canvas generation...');
     const canvas = await html2canvas(element, {
       scale: 1,
       backgroundColor: '#0a428d',
@@ -29,16 +30,15 @@ export const shareOutfit = async ({ element, t, score, scanId, language, onLoadi
       logging: false
     });
 
-    if (import.meta.env.DEV) {
-      console.log('Canvas created successfully:', canvas.width, 'x', canvas.height);
-    }
+    console.log('[Share] Canvas created:', canvas.width, 'x', canvas.height);
 
     const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
-    if (!blob) throw new Error('Failed to generate blob');
-    
-    if (import.meta.env.DEV) {
-      console.log('Blob created successfully, size:', blob.size);
+    if (!blob) {
+      console.error('[Share] Blob generation failed');
+      throw new Error('Failed to generate blob');
     }
+    
+    console.log('[Share] Blob created, size:', blob.size);
 
     const file = new File([blob], 'outfit-check.jpg', { type: 'image/jpeg' });
     const shareUrl = scanId ? `${window.location.origin}/share/${scanId}` : '';
@@ -49,17 +49,16 @@ export const shareOutfit = async ({ element, t, score, scanId, language, onLoadi
       // @ts-expect-error - canShare may not exist in all browsers despite TypeScript types
       if (navigator.share && navigator.canShare) {
         canShareFiles = navigator.canShare({ files: [file] });
+        console.log('[Share] canShare check result:', canShareFiles);
+      } else {
+        console.log('[Share] navigator.share or canShare not available');
       }
     } catch (e) {
-      if (import.meta.env.DEV) {
-        console.warn('canShare check failed:', e);
-      }
-    }
-    if (import.meta.env.DEV) {
-      console.log('Can share files:', canShareFiles);
+      console.warn('[Share] canShare check failed:', e);
     }
 
     if (canShareFiles) {
+      console.log('[Share] Attempting to share via Web Share API...');
       await navigator.share({
         files: [file],
         title: t('app_title'),
@@ -70,7 +69,9 @@ export const shareOutfit = async ({ element, t, score, scanId, language, onLoadi
         }),
         url: shareUrl || undefined
       });
+      console.log('[Share] Share completed successfully');
     } else {
+      console.log('[Share] Using fallback method');
       if (shareUrl) {
         await navigator.clipboard.writeText(shareUrl);
         alert(t('link_copied', 'Link copied to clipboard!'));
@@ -82,7 +83,11 @@ export const shareOutfit = async ({ element, t, score, scanId, language, onLoadi
       }
     }
   } catch (err) {
-    console.error('Sharing failed', err);
+    console.error('[Share] Error occurred:', err);
+    console.error('[Share] Error name:', (err as Error).name);
+    console.error('[Share] Error message:', (err as Error).message);
+    console.error('[Share] Error stack:', (err as Error).stack);
+    
     // Don't show error if user cancelled the share sheet
     if ((err as Error).name !== 'AbortError') {
       // Provide more helpful error message for users

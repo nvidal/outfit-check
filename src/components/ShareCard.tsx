@@ -43,11 +43,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
       {/* Header with Manual SVG implementation for perfect alignment and scale */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '35px', height: '90px', width: '100%' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <img 
-            src="/logo.svg" 
-            alt="Logo" 
-            style={{ height: '60px', width: '60px', objectFit: 'contain' }} 
-          />
+          {/* Removed logo image to prevent iOS canvas tainting issues */}
           <svg width="365" height="80" style={{ display: 'block' }}>
             <text 
               x="0" 
