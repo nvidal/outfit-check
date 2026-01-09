@@ -187,3 +187,66 @@ Analyze the attached outfit image.
     throw err;
   }
 };
+
+interface RecommendOptions {
+  apiKey: string;
+  imageBase64: string;
+  mimeType: string;
+  language: string;
+  userRequest: string;
+}
+
+export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language, userRequest }: RecommendOptions) => {
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-2.5-flash-image";
+
+  const prompt = `
+**Role:** Expert Personal Stylist.
+**Task:** 
+1. Analyze the user's photo (physique, skin tone, gender expression).
+2. Recommend a COMPLETE outfit based on their request: "${userRequest}".
+3. Explain WHY it works for them.
+
+**Output Language:** ${language}
+
+**Response Format (JSON):**
+{
+  "user_analysis": "Brief description of the user's key features relevant to styling (e.g. 'Cool undertones, athletic build').",
+  "outfit_name": "Catchy name for the look",
+  "items": ["Item 1", "Item 2", "Item 3"],
+  "reasoning": "Why this fits the user and the occasion.",
+  "visual_prompt": "A high-quality, photorealistic fashion photography shot of a [describe user features] wearing [describe outfit detailed] in a [describe setting] setting. Full body shot, cinematic lighting."
+}
+`;
+
+  const imagePart = {
+    inlineData: {
+      data: imageBase64,
+      mimeType,
+    },
+  };
+
+  try {
+    const config = {
+      model,
+      config: { responseMimeType: "application/json" },
+      contents: [prompt, imagePart],
+    };
+
+    const result = await ai.models.generateContent(config) as unknown as AIResponse;
+    const responseText = result.text;
+    if (!responseText) throw new Error("Empty response");
+
+    const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(jsonString);
+
+    // Attempt Image Generation (Experimental / Placeholder)
+    // Note: If the SDK/Key supports it, we would call ai.models.generateImage here.
+    // For now, we return the parsed text result.
+    return parsed;
+
+  } catch (err) {
+    console.error("Recommendation Failed", err);
+    throw err;
+  }
+};

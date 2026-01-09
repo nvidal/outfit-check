@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Camera, Shirt } from 'lucide-react';
+import { Camera, Shirt, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export const BottomNav: React.FC = () => {
@@ -19,6 +19,14 @@ export const BottomNav: React.FC = () => {
         >
           <Camera size={24} strokeWidth={isActive('/scan') ? 3 : 2} />
           <span className="text-[10px] font-black uppercase tracking-widest">{t('nav_scan', 'Scan')}</span>
+        </button>
+
+        <button
+          onClick={() => navigate('/recommend')}
+          className={`flex flex-col items-center gap-1 transition ${isActive('/recommend') ? 'text-white opacity-100' : 'text-white/50 hover:text-white/80'}`}
+        >
+          <Sparkles size={24} strokeWidth={isActive('/recommend') ? 3 : 2} />
+          <span className="text-[10px] font-black uppercase tracking-widest">{t('nav_style', 'Style')}</span>
         </button>
 
         <button
