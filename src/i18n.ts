@@ -6,7 +6,7 @@ const resources = {
   en: {
     translation: {
       "app_title": "Outfit Check",
-      "upload_btn": "Take a picture of your outfit,\nselect the occasion\nand we'll check it!",
+      "upload_btn": "Take a picture of yourself,\nselect the occasion\nand we'll recommend you a look!",
       "take_photo": "Take Photo",
       "choose_gallery": "Choose from Gallery",
       "analyzing": "Consulting the fashion gods...",
@@ -74,8 +74,8 @@ const resources = {
   es: {
     translation: {
       "app_title": "Outfit Check",
-      "upload_btn": "Toma una foto de tu outfit,\nselecciona la ocasión\ny lo chequeamos!",
-      "take_photo": "Tomar Foto",
+      "upload_btn": "Toma una foto de tu estilo,\nselecciona la ocasión\ny te recomendaremos un look!",
+      "take_photo": "Take Photo",
       "choose_gallery": "Elegir de Galería",
       "analyzing": "Invocando a los dioses de la moda...",
       "generating_share": "Preparando tu Outfit...",
