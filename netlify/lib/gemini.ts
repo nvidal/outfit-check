@@ -198,8 +198,8 @@ interface RecommendOptions {
 
 export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language, userRequest }: RecommendOptions) => {
   const ai = new GoogleGenAI({ apiKey });
-  // 'gemini-2.5-flash-image' does not support JSON mode reliably. Using standard flash.
-  const model = "gemini-2.5-flash";
+  // Use 'gemini-2.5-flash-image' for single-request multimodal generation (Text + Image)
+  const model = "gemini-2.5-flash-image";
 
   const prompt = `
 **Role:** Expert Personal Stylist.
@@ -207,6 +207,7 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
 1. Analyze the user's photo (physique, skin tone, gender expression).
 2. Recommend a COMPLETE outfit based on their request: "${userRequest}".
 3. Explain WHY it works for them.
+4. **GENERATE A PHOTOREALISTIC IMAGE** of the user (maintaining their face/body features) wearing this EXACT recommended outfit in a cinematic setting.
 
 **Output Language:** ${language} (Ensure all values are in ${language}).
 
@@ -216,7 +217,9 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
 - **Bullet points** for items.
 - No fluff.
 
-**Response Format (JSON):**
+**Response Format:**
+You must provide the text response in **JSON** format, followed by the generated image.
+JSON Structure:
 {
   "user_analysis": "Max 10 words description of user features.",
   "outfit_name": "Short, catchy name",
@@ -224,7 +227,7 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
   "reasoning": "Max 1 sentence explaining the choice.",
   "dos": ["Do 1", "Do 2"],
   "donts": ["Don't 1", "Don't 2"],
-  "visual_prompt": "Photorealistic full-body shot of a [user description from analysis] wearing [outfit details] in a [setting] setting. High fashion photography, detailed texture, cinematic lighting, 8k."
+  "visual_prompt": "Photorealistic full-body shot of a [user description] wearing [outfit details]..."
 }
 `;
 
@@ -236,41 +239,53 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
   };
 
   try {
+    // We do NOT use responseMimeType: 'application/json' because we expect mixed output (JSON Text + Image)
     const config = {
       model,
-      config: { responseMimeType: "application/json" },
       contents: [prompt, imagePart],
     };
 
-    const result = await ai.models.generateContent(config) as unknown as AIResponse;
-    const responseText = result.text;
-    if (!responseText) throw new Error("Empty response");
+    const result = await ai.models.generateContent(config) as unknown as any; // Using any to access raw parts
+    
+    const candidate = result.candidates?.[0];
+    if (!candidate?.content?.parts) throw new Error("Empty response from AI");
 
-    const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(jsonString);
+    let responseText = "";
+    let generatedImageBase64 = null;
+    let generatedImageMimeType = null;
 
-    // Generate Image using Imagen 3
-    try {
-      if (parsed.visual_prompt) {
-        // @ts-ignore - The SDK types might be slightly out of sync or strict, casting to any or ignoring
-        const imageResponse = await ai.models.generateImages({
-          model: 'imagen-3.0-generate-001',
-          prompt: parsed.visual_prompt,
-          config: {
-             numberOfImages: 1,
-             aspectRatio: '3:4',
-             personGeneration: 'allow_adult',
-          }
-        });
-        
-        const generatedImage = imageResponse.generatedImages?.[0]?.image;
-        if (generatedImage?.imageBytes) {
-           parsed.image = `data:image/jpeg;base64,${generatedImage.imageBytes}`;
-        }
+    for (const part of candidate.content.parts) {
+      if (part.text) {
+        responseText += part.text;
       }
-    } catch (imgErr) {
-      console.warn("Image generation failed:", imgErr);
-      // Continue without image
+      if (part.inlineData) {
+        generatedImageBase64 = part.inlineData.data;
+        generatedImageMimeType = part.inlineData.mimeType;
+      }
+    }
+
+    if (!responseText) throw new Error("No text response received");
+
+    // Parse JSON
+    const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+    let parsed;
+    try {
+        parsed = JSON.parse(jsonString);
+    } catch (e) {
+        // Attempt to find JSON block if mixed with other text
+        const match = jsonString.match(/\{[\s\S]*\}/);
+        if (match) {
+            parsed = JSON.parse(match[0]);
+        } else {
+            throw new Error("Failed to parse JSON response");
+        }
+    }
+
+    // Attach Generated Image
+    if (generatedImageBase64 && generatedImageMimeType) {
+      parsed.image = `data:${generatedImageMimeType};base64,${generatedImageBase64}`;
+    } else {
+      console.warn("No image generated in the response parts.");
     }
 
     return parsed;
