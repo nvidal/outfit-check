@@ -154,15 +154,16 @@ export const HistoryPage: React.FC = () => {
                         <img src={item.image_url} alt="Outfit" className="h-full w-full object-cover" />
                       </div>
                       
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-sm truncate">{bestResult.title}</h3>
-                        <div className="flex items-center gap-2 text-xs opacity-70 mt-1">
-                          <span className="font-black text-amber-300 text-sm">{bestResult.score}/10</span>
-                          <span>•</span>
-                          <span className="capitalize">{item.occasion}</span>
-                        </div>
-                      </div>
-
+                                          <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                            <div className="flex items-center gap-2 mb-1">
+                                              <span className="font-black text-amber-300 text-[10px] uppercase tracking-wider">
+                                                {bestResult.score}/10
+                                              </span>
+                                              <span className="text-[10px] opacity-40">•</span>
+                                              <span className="capitalize text-[10px] font-bold opacity-60 truncate">{item.occasion}</span>
+                                            </div>
+                                            <h3 className="font-bold text-sm truncate text-white/90">{bestResult.title}</h3>
+                                          </div>
                       <div className="flex flex-col gap-2">
                         <button
                           onClick={(e) => handleShareClick(e, item)}
@@ -213,14 +214,15 @@ export const HistoryPage: React.FC = () => {
                         )}
                       </div>
                       
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-sm truncate">{item.data.outfit_name}</h3>
-                        <div className="flex items-center gap-2 text-xs opacity-70 mt-1">
-                          <Sparkles size={12} className="text-amber-300" />
-                          <span className="font-bold text-amber-300 text-[10px] uppercase tracking-wider">{t('style_button')}</span>
-                        </div>
-                      </div>
-
+                                          <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                            <div className="flex items-center gap-1.5 mb-1">
+                                              <Sparkles size={10} style={{ color: '#fcd34d' }} fill="#fcd34d" />
+                                              <span className="font-black text-[9px] uppercase tracking-[0.15em]" style={{ color: '#fcd34d' }}>
+                                                {t('style_button')}
+                                              </span>
+                                            </div>
+                                            <h3 className="font-bold text-sm truncate text-white/90">{item.data.outfit_name}</h3>
+                                          </div>
                       <div className="flex flex-col gap-2">
                         {/* Placeholder for alignment with Scan cards */}
                         <div className="p-3 opacity-0 pointer-events-none"><Share2 size={20}/></div>
