@@ -18,10 +18,33 @@ export interface PersonaAnalysisResult extends AnalysisResult {
   persona: Mode;
 }
 
-export interface HistoryItem {
+export interface StyleResult {
+  user_analysis: string;
+  outfit_name: string;
+  items: string[];
+  reasoning: string;
+  visual_prompt: string;
+  image?: string;
+  dos?: string[];
+  donts?: string[];
+}
+
+export interface ScanHistoryItem {
+  type: 'scan';
   id: string;
   image_url: string;
-  ai_results: PersonaAnalysisResult[];
+  data: PersonaAnalysisResult[];
   created_at: string;
   occasion: string;
 }
+
+export interface StyleHistoryItem {
+  type: 'style';
+  id: string;
+  image_url: string;
+  generated_image_url?: string;
+  data: StyleResult;
+  created_at: string;
+}
+
+export type HistoryItem = ScanHistoryItem | StyleHistoryItem;

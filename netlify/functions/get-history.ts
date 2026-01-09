@@ -72,9 +72,13 @@ export default async function handler(req: Request) {
 
   try {
     const result = await client.query(
-      `SELECT id, image_url, ai_results, created_at, occasion 
+      `SELECT id, 'scan' as type, image_url, created_at, ai_results as data, occasion, NULL as generated_image_url
        FROM scans 
-       WHERE user_id = $1 
+       WHERE user_id = $1
+       UNION ALL
+       SELECT id, 'style' as type, image_url, created_at, result as data, NULL as occasion, generated_image_url
+       FROM styles
+       WHERE user_id = $1
        ORDER BY created_at DESC 
        LIMIT $2 OFFSET $3`,
       [userId, limit, offset]

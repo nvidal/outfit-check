@@ -72,48 +72,61 @@ export default async function handler(req: Request) {
   await dbClient.connect();
 
   try {
-    // 1. Fetch the scan to get image_url and verify ownership
-    const res = await dbClient.query(
+    // Helper to delete file from storage given a public URL
+    const deleteFromStorage = async (publicUrl: string) => {
+      const pathPart = `/public/${SUPABASE_BUCKET}/`;
+      const index = publicUrl.indexOf(pathPart);
+      if (index === -1) {
+        console.warn("Could not extract storage path from URL:", publicUrl);
+        return;
+      }
+      const storagePath = publicUrl.substring(index + pathPart.length);
+      const { error } = await supabaseClient.storage
+        .from(SUPABASE_BUCKET)
+        .remove([storagePath]);
+      
+      if (error) console.error("Error deleting from storage:", error);
+    };
+
+    // 1. Try Scans table
+    const scanRes = await dbClient.query(
       "SELECT image_url, user_id FROM scans WHERE id = $1",
       [scanId]
     );
 
-    if (res.rows.length === 0) {
-      return formatError("Scan not found", 404);
-    }
+    if (scanRes.rows.length > 0) {
+      const scan = scanRes.rows[0];
+      if (scan.user_id !== userId) return formatError("Unauthorized", 403);
 
-    const scan = res.rows[0];
-    if (scan.user_id !== userId) {
-      return formatError("Unauthorized to delete this scan", 403);
-    }
-
-    // 2. Extract path from public URL
-    // URL format: https://[project].supabase.co/storage/v1/object/public/outfits/[path]
-    const imageUrl = scan.image_url;
-    const pathPart = `/public/${SUPABASE_BUCKET}/`;
-    const index = imageUrl.indexOf(pathPart);
-    if (index === -1) {
-      console.warn("Could not extract storage path from URL:", imageUrl);
-    } else {
-      const storagePath = imageUrl.substring(index + pathPart.length);
+      await deleteFromStorage(scan.image_url);
+      await dbClient.query("DELETE FROM scans WHERE id = $1", [scanId]);
       
-      // 3. Delete from Supabase Storage
-      const { error: deleteStorageError } = await supabaseClient.storage
-        .from(SUPABASE_BUCKET)
-        .remove([storagePath]);
-
-      if (deleteStorageError) {
-        console.error("Error deleting from storage:", deleteStorageError);
-        // We continue anyway to delete the DB record
-      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
     }
 
-    // 4. Delete from Database
-    await dbClient.query("DELETE FROM scans WHERE id = $1", [scanId]);
+    // 2. Try Styles table
+    const styleRes = await dbClient.query(
+      "SELECT image_url, generated_image_url, user_id FROM styles WHERE id = $1",
+      [scanId]
+    );
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    });
+    if (styleRes.rows.length > 0) {
+      const style = styleRes.rows[0];
+      if (style.user_id !== userId) return formatError("Unauthorized", 403);
+
+      if (style.image_url) await deleteFromStorage(style.image_url);
+      if (style.generated_image_url) await deleteFromStorage(style.generated_image_url);
+      
+      await dbClient.query("DELETE FROM styles WHERE id = $1", [scanId]);
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    return formatError("Item not found", 404);
   } catch (error) {
     console.error("Error deleting scan:", error);
     return formatError("Failed to delete scan", 500);

@@ -48,7 +48,7 @@ export default async function handler(req: Request) {
 
   try {
     const result = await client.query(
-      `SELECT id, image_url, ai_results, created_at, occasion, user_name
+      `SELECT id, 'scan' as type, image_url, ai_results as data, created_at, occasion, user_name
        FROM scans 
        WHERE id = $1`,
       [id]

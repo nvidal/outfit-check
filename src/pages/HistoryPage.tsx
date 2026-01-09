@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { BottomNav } from '../components/BottomNav';
 import { Logo } from '../components/Logo';
 import { ShareCard } from '../components/ShareCard';
-import { Share2, Sparkles, Trash2 } from 'lucide-react';
+import { Share2, Sparkles, Trash2, Shirt } from 'lucide-react';
 import { shareOutfit } from '../lib/share';
 import type { HistoryItem } from '../types';
 
@@ -61,11 +61,11 @@ export const HistoryPage: React.FC = () => {
   };
 
   const generateAndShare = useCallback(async () => {
-    if (!shareCardRef.current || !shareItem) return;
+    if (!shareCardRef.current || !shareItem || shareItem.type !== 'scan') return;
 
-    const bestResult = shareItem.ai_results.reduce((prev, current) => 
+    const bestResult = shareItem.data.reduce((prev, current) => 
       (prev.score > current.score) ? prev : current
-    , shareItem.ai_results[0]);
+    , shareItem.data[0]);
 
     await shareOutfit({
       element: shareCardRef.current,
@@ -86,12 +86,14 @@ export const HistoryPage: React.FC = () => {
 
   const handleShareClick = (e: React.MouseEvent, item: HistoryItem) => {
     e.stopPropagation();
-    setShareItem(item);
+    if (item.type === 'scan') {
+      setShareItem(item);
+    }
   };
 
-  const currentBestResult = shareItem ? shareItem.ai_results.reduce((prev, current) => 
-    (prev.score > current.score) ? prev : current
-  , shareItem.ai_results[0]) : null;
+  const currentBestResult = (shareItem && shareItem.type === 'scan') 
+    ? shareItem.data.reduce((prev, current) => (prev.score > current.score) ? prev : current, shareItem.data[0]) 
+    : null;
 
   return (
     <div className="flex h-dvh flex-col bg-[#0a428d] text-white font-sans overflow-hidden relative">
@@ -101,7 +103,7 @@ export const HistoryPage: React.FC = () => {
           <p className="text-xl font-black uppercase tracking-widest">{t('generating_share', 'Preparing Outfit...')}</p>
         </div>
       )}
-      {shareItem && currentBestResult && (
+      {shareItem && shareItem.type === 'scan' && currentBestResult && (
         <ShareCard 
           ref={shareCardRef}
           image={shareItem.image_url}
@@ -134,48 +136,104 @@ export const HistoryPage: React.FC = () => {
         ) : (
           <div className="flex flex-col gap-4">
             {history.map((item) => {
-              const bestResult = item.ai_results.reduce((prev, current) => 
-                (prev.score > current.score) ? prev : current
-              , item.ai_results[0]);
+              if (item.type === 'scan') {
+                const bestResult = item.data.reduce((prev, current) => 
+                  (prev.score > current.score) ? prev : current
+                , item.data[0]);
 
-              return (
-                <div 
-                  key={item.id}
-                  onClick={() => {
-                    navigate('/scan', { state: { result: item.ai_results, image: item.image_url, id: item.id } });
-                  }}
-                  className="bg-white/10 border border-white/10 rounded-2xl p-3 flex gap-4 items-center active:scale-98 transition cursor-pointer"
-                >
-                  <div className="h-16 w-16 shrink-0 rounded-xl overflow-hidden bg-black/20">
-                    <img src={item.image_url} alt="Outfit" className="h-full w-full object-cover" />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-sm truncate">{bestResult.title}</h3>
-                    <div className="flex items-center gap-2 text-xs opacity-70 mt-1">
-                      <span className="font-black text-amber-300 text-sm">{bestResult.score}/10</span>
-                      <span>•</span>
-                      <span className="capitalize">{item.occasion}</span>
+                return (
+                  <div 
+                    key={item.id}
+                    onClick={() => {
+                      navigate('/scan', { state: { result: item.data, image: item.image_url, id: item.id } });
+                    }}
+                    className="bg-white/10 border border-white/10 rounded-2xl p-3 flex gap-4 items-center active:scale-98 transition cursor-pointer"
+                  >
+                    <div className="h-16 w-16 shrink-0 rounded-xl overflow-hidden bg-black/20">
+                      <img src={item.image_url} alt="Outfit" className="h-full w-full object-cover" />
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-sm truncate">{bestResult.title}</h3>
+                      <div className="flex items-center gap-2 text-xs opacity-70 mt-1">
+                        <span className="font-black text-amber-300 text-sm">{bestResult.score}/10</span>
+                        <span>•</span>
+                        <span className="capitalize">{item.occasion}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={(e) => handleShareClick(e, item)}
+                        className="p-3 rounded-full hover:bg-white/10 transition"
+                      >
+                        <Share2 size={20} />
+                      </button>
+                      <button
+                        onClick={(e) => handleDelete(e, item.id)}
+                        disabled={isDeleting === item.id}
+                        className={`p-3 rounded-full hover:bg-rose-500/20 transition text-rose-400/70 hover:text-rose-400 ${isDeleting === item.id ? 'animate-pulse' : ''}`}
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </div>
                   </div>
+                );
+              } else {
+                 // Style Item
+                 return (
+                  <div 
+                    key={item.id}
+                    onClick={() => {
+                      // Pass result data and images to RecommendPage via location state
+                      navigate('/recommend', { 
+                        state: { 
+                          result: { 
+                            ...item.data, 
+                            image: item.generated_image_url 
+                          }, 
+                          image: item.image_url, 
+                          id: item.id 
+                        } 
+                      });
+                    }}
+                    className="bg-white/10 border border-white/10 rounded-2xl p-3 flex gap-4 items-center active:scale-98 transition cursor-pointer"
+                  >
+                    <div className="h-16 w-16 shrink-0 rounded-xl overflow-hidden bg-black/20 relative group">
+                      <img 
+                        src={item.generated_image_url || item.image_url} 
+                        alt="Style" 
+                        className="h-full w-full object-cover" 
+                      />
+                      {item.generated_image_url && (
+                        <div className="absolute top-1 right-1">
+                           <Sparkles size={10} className="text-amber-300 drop-shadow-md" fill="currentColor" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-sm truncate">{item.data.outfit_name}</h3>
+                      <div className="flex items-center gap-2 text-xs opacity-70 mt-1">
+                        <Shirt size={12} className="text-purple-300" />
+                        <span className="font-bold text-purple-300 text-[10px] uppercase tracking-wider">{t('nav_style')}</span>
+                      </div>
+                    </div>
 
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={(e) => handleShareClick(e, item)}
-                      className="p-3 rounded-full hover:bg-white/10 transition"
-                    >
-                      <Share2 size={20} />
-                    </button>
-                    <button
-                      onClick={(e) => handleDelete(e, item.id)}
-                      disabled={isDeleting === item.id}
-                      className={`p-3 rounded-full hover:bg-rose-500/20 transition text-rose-400/70 hover:text-rose-400 ${isDeleting === item.id ? 'animate-pulse' : ''}`}
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    <div className="flex flex-col gap-2">
+                       {/* Placeholder for alignment with Scan cards */}
+                      <div className="p-3 opacity-0 pointer-events-none"><Share2 size={20}/></div>
+                      <button
+                        onClick={(e) => handleDelete(e, item.id)}
+                        disabled={isDeleting === item.id}
+                        className={`p-3 rounded-full hover:bg-rose-500/20 transition text-rose-400/70 hover:text-rose-400 ${isDeleting === item.id ? 'animate-pulse' : ''}`}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
+                 );
+              }
             })}
           </div>
         )}

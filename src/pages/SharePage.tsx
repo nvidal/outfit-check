@@ -29,11 +29,13 @@ export const SharePage: React.FC = () => {
         const scanData = response.data as HistoryItem;
         setData(scanData);
         
-        // Auto-select the best persona initially
-        const best = scanData.ai_results.reduce((prev, current) => 
-          (prev.score > current.score) ? prev : current
-        , scanData.ai_results[0]);
-        setSelectedPersona(best.persona);
+        if (scanData.type === 'scan') {
+          // Auto-select the best persona initially
+          const best = scanData.data.reduce((prev, current) => 
+            (prev.score > current.score) ? prev : current
+          , scanData.data[0]);
+          setSelectedPersona(best.persona);
+        }
       } catch (err) {
         console.error(err);
         setError('Outfit check not found.');
@@ -53,11 +55,11 @@ export const SharePage: React.FC = () => {
     );
   }
 
-  if (error || !data) {
+  if (error || !data || data.type !== 'scan') {
     return (
       <div className="flex h-dvh flex-col bg-[#0a428d] text-white p-6 font-sans items-center justify-center text-center gap-4">
         <Logo size="lg" />
-        <p className="text-white/60">{error || 'Something went wrong.'}</p>
+        <p className="text-white/60">{error || 'Something went wrong or content type not supported.'}</p>
         <button 
           onClick={() => navigate('/')}
           className="bg-white text-[#0a428d] px-6 py-3 rounded-xl font-bold uppercase tracking-wide"
@@ -68,7 +70,8 @@ export const SharePage: React.FC = () => {
     );
   }
 
-  const result = data.ai_results.find(r => r.persona === selectedPersona) || data.ai_results[0];
+  // At this point data is ScanHistoryItem due to check above
+  const result = data.data.find(r => r.persona === selectedPersona) || data.data[0];
 
   const handlePersonaSelect = (persona: Mode) => {
     setSelectedPersona(persona);
