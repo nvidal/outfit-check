@@ -47,12 +47,23 @@ export default async function handler(req: Request) {
   await client.connect();
 
   try {
-    const result = await client.query(
+    // Try Scan
+    let result = await client.query(
       `SELECT id, 'scan' as type, image_url, ai_results as data, created_at, occasion, user_name
        FROM scans 
        WHERE id = $1`,
       [id]
     );
+
+    if (result.rows.length === 0) {
+      // Try Style
+      result = await client.query(
+        `SELECT id, 'style' as type, image_url, generated_image_url, result as data, created_at
+         FROM styles 
+         WHERE id = $1`,
+        [id]
+      );
+    }
 
     if (result.rows.length === 0) {
       return formatError("Scan not found", 404);

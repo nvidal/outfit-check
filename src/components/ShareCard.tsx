@@ -67,21 +67,22 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
           </svg>
         </div>
 
-        <svg width={badgeWidth} height="130" style={{ display: 'block' }}>
-          <rect width={badgeWidth} height="130" rx="32" fill={amber300} />
-          <text 
-            x={badgeWidth / 2} 
-            y="92" 
-            textAnchor="middle" 
-            fontFamily={font} 
-            fontWeight="900" 
-            fontSize={mode === 'scan' ? "72" : "56"} 
-            fill={brandBlue}
-            letterSpacing={mode === 'scan' ? "0" : "-1"}
-          >
-            {badgeText}
-          </text>
-        </svg>
+        {mode === 'scan' && (
+          <svg width={badgeWidth} height="130" style={{ display: 'block' }}>
+            <rect width={badgeWidth} height="130" rx="32" fill={amber300} />
+            <text 
+              x={badgeWidth / 2} 
+              y="92" 
+              textAnchor="middle" 
+              fontFamily={font} 
+              fontWeight="900" 
+              fontSize="72" 
+              fill={brandBlue}
+            >
+              {badgeText}
+            </text>
+          </svg>
+        )}
       </div>
 
       {/* Image Container - Strictly 3:4 Ratio (900x1200) */}
@@ -90,9 +91,9 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
           position: 'relative',
           width: '900px', 
           height: '1200px',
-          borderRadius: '70px',
+          borderRadius: '40px',
           borderColor: white20, 
-          borderWidth: '12px', 
+          borderWidth: '4px', 
           borderStyle: 'solid',
           backgroundColor: '#000',
           overflow: 'hidden',
@@ -193,36 +194,27 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
           );
         })}
 
-        {mode === 'style' && items?.slice(0, 5).map((item, i) => (
+        {mode === 'style' && items && (
             <div 
-              key={i}
               style={{
                 backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                border: `2px solid ${white20}`,
-                borderRadius: '20px',
-                height: '76px',
+                border: `4px solid ${white20}`,
+                borderRadius: '40px',
+                padding: '40px',
                 width: '100%',
-                overflow: 'hidden'
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '24px'
               }}
             >
-              <svg width="900" height="76">
-                <circle cx="35" cy="38" r="8" fill={amber300} />
-                <circle cx="35" cy="38" r="14" fill="none" stroke={amber300} strokeWidth="2" opacity="0.3" />
-                
-                <text 
-                  x="70" 
-                  y="46" 
-                  fontFamily={font} 
-                  fontWeight="700" 
-                  fontSize="28" 
-                  fill="white"
-                  opacity="0.9"
-                >
-                  {item.toUpperCase()}
-                </text>
-              </svg>
+               {items.slice(0, 5).map((item, i) => (
+                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '24px' }}>
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: amber300, marginTop: '12px', flexShrink: 0 }} />
+                    <span style={{ fontFamily: font, fontSize: '36px', fontWeight: '500', lineHeight: '1.2', color: white }}>{item}</span>
+                 </div>
+               ))}
             </div>
-        ))}
+        )}
       </div>
     </div>
   );
