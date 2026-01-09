@@ -169,10 +169,10 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onError
       {!preview ? (
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="w-full h-full border-4 border-dashed border-blue-400/40 rounded-3xl flex flex-col items-center justify-center text-white bg-white/5 hover:bg-white/10 transition-all active:scale-95"
+          className="w-full h-full border-4 border-dashed border-blue-400/40 rounded-3xl flex flex-col items-center justify-center text-white bg-white/5 hover:bg-white/10 transition-all active:scale-95 p-6"
         >
-          <Camera size={48} className="mb-3 opacity-40" />
-          <span className="font-black text-sm uppercase tracking-widest">{t('upload_btn')}</span>
+          <Camera size={48} className="mb-4 opacity-40" />
+          <span className="font-black text-sm uppercase tracking-widest whitespace-pre-line text-center leading-relaxed px-4">{t('upload_btn')}</span>
         </button>
       ) : (
         <div className="relative h-full">

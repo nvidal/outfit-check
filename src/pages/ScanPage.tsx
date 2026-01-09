@@ -198,21 +198,18 @@ export const ScanPage = () => {
             <p className="text-xl font-black uppercase tracking-widest">
               {isLoading ? t('analyzing') : t('generating_share', 'Preparing Outfit...')}
             </p>
-                    </div>
-                  )}
-                  {image && (
-                    <div className="sr-only">
-                      <ShareCard 
-                        ref={shareCardRef}
-                        image={image}
-                        score={displayResult.score}
-                        highlights={displayResult.highlights}
-                      />
-                    </div>
-                  )}
-          
-                  <div className="flex-1 overflow-y-auto p-6 pb-24">
-                  <header className="relative mb-8 shrink-0 flex items-center justify-center z-20 min-h-[48px]">
+                              </div>
+                            )}
+                            {image && (
+                              <ShareCard 
+                                ref={shareCardRef}
+                                image={image}
+                                score={displayResult.score}
+                                highlights={displayResult.highlights}
+                              />
+                            )}
+                    
+                            <div className="flex-1 overflow-y-auto p-6 pb-24">                  <header className="relative mb-8 shrink-0 flex items-center justify-center z-20 min-h-[48px]">
 
                     {/* Centered Persona Selector */}
 
@@ -230,81 +227,81 @@ export const ScanPage = () => {
 
                       >
 
-                        <span className="flex items-center gap-2.5">
+                                        <span className="flex items-center gap-2.5">
 
-                          {(() => {
+                                          {(() => {
 
-                            const Icon = selectedPersona === 'editor'
+                                            const Icon = selectedPersona === 'editor'
 
-                              ? ScanEye
+                                              ? ScanEye
 
-                              : selectedPersona === 'hypebeast'
+                                              : selectedPersona === 'hypebeast'
 
-                                ? Flame
+                                                ? Flame
 
-                                : Flower2;
+                                                : Flower2;
 
-                            return <Icon size={18} />;
+                                            return <Icon size={18} className="text-amber-300" />;
 
-                          })()}
+                                          })()}
 
-                          <span className="text-xs font-black uppercase tracking-[0.2em]">
+                                          <span className="text-xs font-black uppercase tracking-[0.2em]">
 
-                            {t(`mode_${selectedPersona}`)}
+                                            {t(`mode_${selectedPersona}`)}
 
-                          </span>
+                                          </span>
 
-                        </span>
+                                        </span>
 
-                        <ChevronsDown size={16} className="opacity-50" />
+                                        <ChevronsDown size={16} className="opacity-50" />
 
-                      </button>
+                                      </button>
 
-        
+                        
 
-                      {personaDropdownOpen && (
+                                      {personaDropdownOpen && (
 
-                        <div className="absolute top-full mt-2 w-56 bg-[#0a428d] border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-50 backdrop-blur-md">
+                                        <div className="absolute top-full mt-2 w-56 bg-[#0a428d] border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-50 backdrop-blur-md">
 
-                          {(['editor', 'hypebeast', 'boho'] as Mode[]).map((persona) => {
+                                          {(['editor', 'hypebeast', 'boho'] as Mode[]).map((persona) => {
 
-                            const Icon = persona === 'editor'
+                                            const Icon = persona === 'editor'
 
-                              ? ScanEye
+                                              ? ScanEye
 
-                              : persona === 'hypebeast'
+                                              : persona === 'hypebeast'
 
-                                ? Flame
+                                                ? Flame
 
-                                : Flower2;
+                                                : Flower2;
 
-                            return (
+                                            return (
 
-                              <button
+                                              <button
 
-                                key={persona}
+                                                key={persona}
 
-                                type="button"
+                                                type="button"
 
-                                onClick={() => handlePersonaSelect(persona)}
+                                                onClick={() => handlePersonaSelect(persona)}
 
-                                className={`flex w-full items-center gap-3 px-5 py-4 text-left text-xs font-black uppercase tracking-widest text-white hover:bg-white/10 transition ${persona === 'boho' ? '' : 'border-b border-white/5'}`}
+                                                className={`flex w-full items-center gap-3 px-5 py-4 text-left text-xs font-black uppercase tracking-widest text-white hover:bg-white/10 transition ${persona === 'boho' ? '' : 'border-b border-white/5'}`}
 
-                              >
+                                              >
 
-                                <Icon size={18} />
+                                                <Icon size={18} className="text-amber-300" />
 
-                                {t(`mode_${persona}`)}
+                                                {t(`mode_${persona}`)}
 
-                              </button>
+                                              </button>
 
-                            );
+                                            );
 
-                          })}
+                                          })}
 
-                        </div>
+                                        </div>
 
-                      )}
+                                      )}
 
                     </div>
 
@@ -355,10 +352,10 @@ export const ScanPage = () => {
         
 
                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <h2 className="text-xl font-black tracking-tight text-center">{displayResult.title}</h2>
+              <h2 className="text-2xl font-black tracking-tight text-center text-white">{displayResult.title}</h2>
 
-              <div className="bg-white/5 rounded-2xl p-4 border border-white/10 shadow-inner">
-                <p className="text-sm leading-relaxed opacity-90 text-center italic">"{displayResult.critique}"</p>
+              <div className="bg-white/10 rounded-2xl p-5 border border-white/20 shadow-xl">
+                <p className="text-base leading-relaxed text-white text-center italic font-medium">"{displayResult.critique}"</p>
               </div>
 
               {/* Highlights List */}
@@ -372,23 +369,23 @@ export const ScanPage = () => {
                         loadHighlightCoords(selectedPersona, i);
                       }
                     }}
-                    className={`flex items-center gap-3 rounded-xl p-2.5 border transition-all text-left
+                    className={`flex items-center gap-3 rounded-xl p-3 border transition-all text-left
                       ${activeHighlight === i 
-                        ? 'bg-white/20 border-white shadow-lg scale-[1.01]' 
-                        : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+                        ? 'bg-white/30 border-white shadow-lg scale-[1.01]' 
+                        : 'bg-white/10 border-white/20 hover:bg-white/15'}`}
                   >
-                    <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${h.type === 'good' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' : 'bg-rose-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]'}`} />
-                    <span className="text-xs font-bold opacity-90">{h.label}</span>
+                    <div className={`h-3 w-3 shrink-0 rounded-full ${h.type === 'good' ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]' : 'bg-rose-400 shadow-[0_0_10px_rgba(248,113,113,0.8)]'}`} />
+                    <span className="text-xs font-bold text-white">{h.label}</span>
                   </button>
                 ))}
               </div>
 
-              <div className="rounded-xl bg-white/10 p-4 border border-white/20 shadow-lg mt-2">
-                <div className="flex items-center gap-2 mb-1">
-                  <Sparkles size={14} className="text-amber-300" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-90">{t('improvement_tip')}</p>
+              <div className="rounded-xl bg-amber-400/15 p-5 border border-amber-400/30 shadow-lg mt-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles size={16} className="text-amber-300" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200">{t('improvement_tip')}</p>
                 </div>
-                <p className="text-sm font-medium">{displayResult.improvement_tip}</p>
+                <p className="text-sm font-bold text-white leading-snug">{displayResult.improvement_tip}</p>
               </div>
 
               <button

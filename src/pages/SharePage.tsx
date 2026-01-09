@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Logo } from '../components/Logo';
-import { Sparkles, ScanEye, Flame, Flower2, ChevronsDown } from 'lucide-react';
+import { Sparkles, ScanEye, Flame, Flower2, ChevronsDown, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { OutfitImage } from '../components/OutfitImage';
+import { ShareCard } from '../components/ShareCard';
+import { shareOutfit } from '../lib/share';
 import type { HistoryItem, Mode } from '../types';
 
 export const SharePage: React.FC = () => {
@@ -17,6 +19,8 @@ export const SharePage: React.FC = () => {
   const [selectedPersona, setSelectedPersona] = useState<Mode>('editor');
   const [personaDropdownOpen, setPersonaDropdownOpen] = useState(false);
   const [activeHighlight, setActiveHighlight] = useState<number | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+  const shareCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchScan = async () => {
@@ -72,25 +76,50 @@ export const SharePage: React.FC = () => {
     setPersonaDropdownOpen(false);
   };
 
+  const handleShare = async () => {
+    if (!shareCardRef.current || !result) return;
+
+    await shareOutfit({
+      element: shareCardRef.current,
+      t,
+      score: result.score,
+      scanId: id,
+      onLoading: setIsSharing
+    });
+  };
+
   return (
     <div className="flex h-dvh flex-col bg-[#0a428d] text-white p-6 font-sans overflow-y-auto">
+      {(isSharing) && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
+          <p className="text-xl font-black uppercase tracking-widest">
+            {t('generating_share', 'Preparing Outfit...')}
+          </p>
+        </div>
+      )}
+
+      <ShareCard 
+        ref={shareCardRef}
+        image={data.image_url}
+        score={result.score}
+        highlights={result.highlights}
+      />
+
       <header className="relative mb-6 text-center shrink-0 flex items-center justify-between z-50">
-        <div className="w-8" />
-        <Logo size="md" />
-        
         <div className="relative">
           <button
             onClick={() => setPersonaDropdownOpen(!personaDropdownOpen)}
             className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition flex items-center gap-1"
           >
-            {selectedPersona === 'editor' && <ScanEye size={20} />}
-            {selectedPersona === 'hypebeast' && <Flame size={20} />}
-            {selectedPersona === 'boho' && <Flower2 size={20} />}
-            <ChevronsDown size={14} className="opacity-50" />
+            {selectedPersona === 'editor' && <ScanEye size={20} className="text-amber-300" />}
+            {selectedPersona === 'hypebeast' && <Flame size={20} className="text-amber-300" />}
+            {selectedPersona === 'boho' && <Flower2 size={20} className="text-amber-300" />}
+            <ChevronsDown size={14} className="opacity-50 text-white" />
           </button>
 
           {personaDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-[#0a428d] border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-[60] backdrop-blur-md">
+            <div className="absolute left-0 mt-2 w-48 bg-[#0a428d] border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-[60] backdrop-blur-md">
               {(['editor', 'hypebeast', 'boho'] as Mode[]).map((persona) => {
                 const Icon = persona === 'editor' ? ScanEye : persona === 'hypebeast' ? Flame : Flower2;
                 return (
@@ -99,7 +128,7 @@ export const SharePage: React.FC = () => {
                     onClick={() => handlePersonaSelect(persona)}
                     className="flex w-full items-center gap-3 px-5 py-4 text-left text-xs font-black uppercase tracking-widest text-white hover:bg-white/10 transition border-b border-white/5 last:border-0"
                   >
-                    <Icon size={18} />
+                    <Icon size={18} className="text-amber-300" />
                     {t(`mode_${persona}`)}
                   </button>
                 );
@@ -107,6 +136,16 @@ export const SharePage: React.FC = () => {
             </div>
           )}
         </div>
+
+        <Logo size="md" />
+
+        <button 
+          onClick={handleShare}
+          className="p-2.5 bg-white/10 rounded-full hover:bg-white/20 transition active:scale-95"
+          title={t('share', 'Share')}
+        >
+          <Share2 size={20} />
+        </button>
       </header>
 
       <main className="flex flex-1 flex-col gap-6 max-w-lg mx-auto w-full pb-8">
@@ -127,8 +166,11 @@ export const SharePage: React.FC = () => {
             <span className="text-xs font-black uppercase tracking-[0.2em]">{t(`mode_${result.persona}`)}</span>
           </div>
 
-          <h2 className="text-2xl font-black tracking-tight">{result.title}</h2>
-          <p className="text-lg leading-snug opacity-90 italic">"{result.critique}"</p>
+          <h2 className="text-3xl font-black tracking-tight text-white">{result.title}</h2>
+          
+          <div className="bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl">
+            <p className="text-xl leading-relaxed text-white italic font-medium">"{result.critique}"</p>
+          </div>
 
           {/* Highlights List */}
           <div className="grid gap-2 mt-2">
@@ -136,23 +178,23 @@ export const SharePage: React.FC = () => {
               <button 
                 key={i} 
                 onClick={() => setActiveHighlight(activeHighlight === i ? null : i)}
-                className={`flex items-center gap-3 rounded-xl p-2.5 border transition-all text-left
+                className={`flex items-center gap-3 rounded-xl p-3 border transition-all text-left
                   ${activeHighlight === i 
-                    ? 'bg-white/20 border-white shadow-lg scale-[1.01]' 
-                    : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+                    ? 'bg-white/30 border-white shadow-lg scale-[1.01]' 
+                    : 'bg-white/10 border-white/20 hover:bg-white/15'}`}
               >
-                <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${h.type === 'good' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' : 'bg-rose-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]'}`} />
-                <span className="text-xs font-bold opacity-90">{h.label}</span>
+                <div className={`h-3 w-3 shrink-0 rounded-full ${h.type === 'good' ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]' : 'bg-rose-400 shadow-[0_0_10px_rgba(248,113,113,0.8)]'}`} />
+                <span className="text-sm font-bold text-white">{h.label}</span>
               </button>
             ))}
           </div>
 
-          <div className="rounded-2xl bg-white/10 p-5 border border-white/20 shadow-lg">
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles size={16} className="text-amber-300" />
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-90">{t('improvement_tip')}</p>
+          <div className="rounded-2xl bg-amber-400/15 p-6 border border-amber-400/30 shadow-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles size={18} className="text-amber-300" />
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200">{t('improvement_tip')}</p>
             </div>
-            <p className="font-medium">{result.improvement_tip}</p>
+            <p className="text-base font-bold text-white leading-snug">{result.improvement_tip}</p>
           </div>
         </div>
 

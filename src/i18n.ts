@@ -6,7 +6,7 @@ const resources = {
   en: {
     translation: {
       "app_title": "Outfit Check",
-      "upload_btn": "Take Photo / Upload",
+      "upload_btn": "Take a picture of your outfit,\nselect the occasion\nand we'll check it!",
       "take_photo": "Take Photo",
       "choose_gallery": "Choose from Gallery",
       "analyzing": "Analyzing your fit...",
@@ -49,6 +49,8 @@ const resources = {
       "link_copied": "Link copied to clipboard!",
       "delete_error": "Failed to delete scan.",
       "install_app": "Install App",
+      "install_ios_title": "Install Outfit Check",
+      "install_ios_instructions": "To install this app on your iPhone, tap the Share icon in Safari and select 'Add to Home Screen'.",
       "share_message": "Look at my Outfit Check,\nI got a {{score}}/10! What do you think?\n{{url}}",
       "confirm": "Confirm",
       "cancel": "Cancel"
@@ -57,7 +59,7 @@ const resources = {
   es: {
     translation: {
       "app_title": "Outfit Check",
-      "upload_btn": "Tomar Foto / Subir",
+      "upload_btn": "Toma una foto de tu outfit,\nselecciona la ocasión\ny lo chequeamos!",
       "take_photo": "Tomar Foto",
       "choose_gallery": "Elegir de Galería",
       "analyzing": "Analizando tu outfit...",
@@ -100,6 +102,8 @@ const resources = {
       "link_copied": "¡Enlace copiado!",
       "delete_error": "No se pudo eliminar el escaneo.",
       "install_app": "Instalar App",
+      "install_ios_title": "Instalar Outfit Check",
+      "install_ios_instructions": "Para instalar esta app en tu iPhone, toca el icono de Compartir en Safari y selecciona 'Añadir a la pantalla de inicio'.",
       "share_message": "Mira mi Outfit Check,\n¡Obtuve un {{score}}/10! ¿Qué te parece?\n{{url}}",
       "confirm": "Confirmar",
       "cancel": "Cancelar"
