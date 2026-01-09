@@ -61,19 +61,29 @@ export const HistoryPage: React.FC = () => {
   };
 
   const generateAndShare = useCallback(async () => {
-    if (!shareCardRef.current || !shareItem || shareItem.type !== 'scan') return;
+    if (!shareCardRef.current || !shareItem) return;
 
-    const bestResult = shareItem.data.reduce((prev, current) => 
-      (prev.score > current.score) ? prev : current
-    , shareItem.data[0]);
+    if (shareItem.type === 'scan') {
+      const bestResult = shareItem.data.reduce((prev, current) => 
+        (prev.score > current.score) ? prev : current
+      , shareItem.data[0]);
 
-    await shareOutfit({
-      element: shareCardRef.current,
-      t,
-      score: bestResult.score,
-      scanId: shareItem.id,
-      onLoading: setIsSharing
-    });
+      await shareOutfit({
+        element: shareCardRef.current,
+        t,
+        score: bestResult.score,
+        scanId: shareItem.id,
+        onLoading: setIsSharing
+      });
+    } else {
+      await shareOutfit({
+        element: shareCardRef.current,
+        t,
+        mode: 'style',
+        scanId: shareItem.id,
+        onLoading: setIsSharing
+      });
+    }
     
     setShareItem(null);
   }, [shareItem, t]);
@@ -86,9 +96,7 @@ export const HistoryPage: React.FC = () => {
 
   const handleShareClick = (e: React.MouseEvent, item: HistoryItem) => {
     e.stopPropagation();
-    if (item.type === 'scan') {
-      setShareItem(item);
-    }
+    setShareItem(item);
   };
 
   const currentBestResult = (shareItem && shareItem.type === 'scan') 
@@ -103,13 +111,25 @@ export const HistoryPage: React.FC = () => {
           <p className="text-xl font-black uppercase tracking-widest">{t('generating_share', 'Preparing Outfit...')}</p>
         </div>
       )}
-      {shareItem && shareItem.type === 'scan' && currentBestResult && (
-        <ShareCard 
-          ref={shareCardRef}
-          image={shareItem.image_url}
-          score={currentBestResult.score}
-          highlights={currentBestResult.highlights}
-        />
+      
+      {/* Hidden Share Card for Generation */}
+      {shareItem && (
+        shareItem.type === 'scan' && currentBestResult ? (
+          <ShareCard 
+            ref={shareCardRef}
+            image={shareItem.image_url}
+            score={currentBestResult.score}
+            highlights={currentBestResult.highlights}
+          />
+        ) : shareItem.type === 'style' ? (
+          <ShareCard 
+            ref={shareCardRef}
+            mode="style"
+            image={shareItem.generated_image_url || shareItem.image_url}
+            items={shareItem.data.items}
+            title={t('style_button')}
+          />
+        ) : null
       )}
 
       <header className="relative flex items-center justify-center shrink-0 p-6 pb-2 max-w-lg mx-auto w-full">
@@ -154,16 +174,17 @@ export const HistoryPage: React.FC = () => {
                         <img src={item.image_url} alt="Outfit" className="h-full w-full object-cover" />
                       </div>
                       
-                                          <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                            <div className="flex items-center gap-2 mb-1">
-                                              <span className="font-black text-amber-300 text-[10px] uppercase tracking-wider">
-                                                {bestResult.score}/10
-                                              </span>
-                                              <span className="text-[10px] opacity-40">•</span>
-                                              <span className="capitalize text-[10px] font-bold opacity-60 truncate">{item.occasion}</span>
-                                            </div>
-                                            <h3 className="font-bold text-sm truncate text-white/90">{bestResult.title}</h3>
-                                          </div>
+                      <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-black text-amber-300 text-[10px] uppercase tracking-wider">
+                            {bestResult.score}/10
+                          </span>
+                          <span className="text-[10px] opacity-40">•</span>
+                          <span className="capitalize text-[10px] font-bold opacity-60 truncate">{item.occasion}</span>
+                        </div>
+                        <h3 className="font-bold text-sm truncate text-white/90">{bestResult.title}</h3>
+                      </div>
+
                       <div className="flex flex-col gap-2">
                         <button
                           onClick={(e) => handleShareClick(e, item)}
@@ -214,18 +235,23 @@ export const HistoryPage: React.FC = () => {
                         )}
                       </div>
                       
-                                          <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                            <div className="flex items-center gap-1.5 mb-1">
-                                              <Sparkles size={10} style={{ color: '#fcd34d' }} fill="#fcd34d" />
-                                              <span className="font-black text-[9px] uppercase tracking-[0.15em]" style={{ color: '#fcd34d' }}>
-                                                {t('style_button')}
-                                              </span>
-                                            </div>
-                                            <h3 className="font-bold text-sm truncate text-white/90">{item.data.outfit_name}</h3>
-                                          </div>
+                      <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Sparkles size={10} style={{ color: '#fcd34d' }} fill="#fcd34d" />
+                          <span className="font-black text-[9px] uppercase tracking-[0.15em]" style={{ color: '#fcd34d' }}>
+                            {t('style_button')}
+                          </span>
+                        </div>
+                        <h3 className="font-bold text-sm truncate text-white/90">{item.data.outfit_name}</h3>
+                      </div>
+
                       <div className="flex flex-col gap-2">
-                        {/* Placeholder for alignment with Scan cards */}
-                        <div className="p-3 opacity-0 pointer-events-none"><Share2 size={20}/></div>
+                        <button
+                          onClick={(e) => handleShareClick(e, item)}
+                          className="p-3 rounded-full hover:bg-white/10 transition"
+                        >
+                          <Share2 size={20} />
+                        </button>
                         <button
                           onClick={(e) => handleDelete(e, item.id)}
                           disabled={isDeleting === item.id}

@@ -4,13 +4,14 @@ interface ShareOptions {
   element: HTMLElement;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: (key: string, options?: any) => string;
-  score: number;
+  score?: number;
+  mode?: 'scan' | 'style';
   scanId?: string;
   language?: string;
   onLoading?: (loading: boolean) => void;
 }
 
-export const shareOutfit = async ({ element, t, score, scanId, language, onLoading }: ShareOptions) => {
+export const shareOutfit = async ({ element, t, score, mode = 'scan', scanId, language, onLoading }: ShareOptions) => {
   try {
     onLoading?.(true);
     await document.fonts.ready;
@@ -32,12 +33,13 @@ export const shareOutfit = async ({ element, t, score, scanId, language, onLoadi
 
     const file = new File([blob], 'outfit-check.jpg', { type: 'image/jpeg' });
     const shareUrl = scanId ? `${window.location.origin}/share/${scanId}` : '';
+    const messageKey = mode === 'style' ? 'share_style_message' : 'share_message';
 
     if (navigator.share && navigator.canShare({ files: [file] })) {
       await navigator.share({
         files: [file],
         title: t('app_title'),
-        text: t('share_message', { 
+        text: t(messageKey, { 
           score, 
           lng: language,
           url: shareUrl 

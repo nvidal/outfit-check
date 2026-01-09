@@ -2,24 +2,27 @@ import { forwardRef } from 'react';
 
 interface ShareCardProps {
   image: string;
-  score: number;
-  highlights: {
+  score?: number;
+  highlights?: {
     type: 'good' | 'bad';
     label: string;
     box_2d?: [number, number, number, number];
     point_2d?: [number, number];
   }[];
+  items?: string[];
+  title?: string;
+  mode?: 'scan' | 'style';
 }
 
-export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, score, highlights }, ref) => {
+export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, score, highlights, items, title, mode = 'scan' }, ref) => {
   const brandBlue = '#0a428d';
   const amber300 = '#fcd34d';
   const white = '#ffffff';
   const white20 = 'rgba(255, 255, 255, 0.2)';
 
   const font = '"Space Grotesk", sans-serif';
-  const scoreText = `${score}/10`;
-  const scoreWidth = 240;
+  const badgeText = mode === 'scan' ? `${score}/10` : (title || 'STYLE ME');
+  const badgeWidth = mode === 'scan' ? 240 : 380;
 
   return (
     <div 
@@ -64,18 +67,19 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
           </svg>
         </div>
 
-        <svg width={scoreWidth} height="130" style={{ display: 'block' }}>
-          <rect width={scoreWidth} height="130" rx="32" fill={amber300} />
+        <svg width={badgeWidth} height="130" style={{ display: 'block' }}>
+          <rect width={badgeWidth} height="130" rx="32" fill={amber300} />
           <text 
-            x={scoreWidth / 2} 
+            x={badgeWidth / 2} 
             y="92" 
             textAnchor="middle" 
             fontFamily={font} 
             fontWeight="900" 
-            fontSize="72" 
+            fontSize={mode === 'scan' ? "72" : "56"} 
             fill={brandBlue}
+            letterSpacing={mode === 'scan' ? "0" : "-1"}
           >
-            {scoreText}
+            {badgeText}
           </text>
         </svg>
       </div>
@@ -103,8 +107,8 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
           crossOrigin="anonymous" 
         />
         
-        {/* Render Highlights (Boxes or Points) */}
-        {highlights?.map((h, i) => {
+        {/* Render Highlights (Scan Mode Only) */}
+        {mode === 'scan' && highlights?.map((h, i) => {
           const color = h.type === 'good' ? '#4ade80' : '#f87171';
           
           if (h.point_2d) {
@@ -152,9 +156,9 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
         })}
       </div>
 
-      {/* Analysis Highlights List - One per line using SVG rows for absolute centering */}
+      {/* Highlights or Items List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '900px' }}>
-        {highlights?.slice(0, 5).map((h, i) => {
+        {mode === 'scan' && highlights?.slice(0, 5).map((h, i) => {
           const dotColor = h.type === 'good' ? '#4ade80' : '#f87171';
           
           return (
@@ -188,6 +192,37 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
             </div>
           );
         })}
+
+        {mode === 'style' && items?.slice(0, 5).map((item, i) => (
+            <div 
+              key={i}
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                border: `2px solid ${white20}`,
+                borderRadius: '20px',
+                height: '76px',
+                width: '100%',
+                overflow: 'hidden'
+              }}
+            >
+              <svg width="900" height="76">
+                <circle cx="35" cy="38" r="8" fill={amber300} />
+                <circle cx="35" cy="38" r="14" fill="none" stroke={amber300} strokeWidth="2" opacity="0.3" />
+                
+                <text 
+                  x="70" 
+                  y="46" 
+                  fontFamily={font} 
+                  fontWeight="700" 
+                  fontSize="28" 
+                  fill="white"
+                  opacity="0.9"
+                >
+                  {item.toUpperCase()}
+                </text>
+              </svg>
+            </div>
+        ))}
       </div>
     </div>
   );
