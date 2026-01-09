@@ -239,32 +239,57 @@ JSON Structure:
   };
 
   try {
-    // We do NOT use responseMimeType: 'application/json' because we expect mixed output (JSON Text + Image)
-    const config = {
-      model,
-      contents: [prompt, imagePart],
+    // ... inside recommendOutfit ...
+    const generate = async (currentPrompt: string) => {
+      const config = {
+        model,
+        contents: [currentPrompt, imagePart],
+      };
+      return await ai.models.generateContent(config) as unknown as any;
     };
 
-    const result = await ai.models.generateContent(config) as unknown as any; // Using any to access raw parts
-    
-    const candidate = result.candidates?.[0];
-    if (!candidate?.content?.parts) throw new Error("Empty response from AI");
+    let result = await generate(prompt);
+    let candidate = result.candidates?.[0];
 
-    let responseText = "";
-    let generatedImageBase64 = null;
-    let generatedImageMimeType = null;
+    // Helper to extract parts
+    const extractParts = (cand: any) => {
+       let text = "";
+       let img = null;
+       let mime = null;
+       if (cand?.content?.parts) {
+         for (const part of cand.content.parts) {
+           if (part.text) text += part.text;
+           if (part.inlineData) {
+             img = part.inlineData.data;
+             mime = part.inlineData.mimeType;
+           }
+         }
+       }
+       return { text, img, mime };
+    };
 
-    for (const part of candidate.content.parts) {
-      if (part.text) {
-        responseText += part.text;
-      }
-      if (part.inlineData) {
-        generatedImageBase64 = part.inlineData.data;
-        generatedImageMimeType = part.inlineData.mimeType;
-      }
+    let { text: responseText, img: generatedImageBase64, mime: generatedImageMimeType } = extractParts(candidate);
+
+    // RETRY LOGIC: If image is missing, try again emphasizing image generation
+    if (!generatedImageBase64) {
+       console.warn("First attempt missing image, retrying with emphasized prompt...");
+       const retryPrompt = `
+**CRITICAL INSTRUCTION:** YOU MUST GENERATE AN IMAGE.
+${prompt}
+**REMINDER:** The response MUST contain both the JSON text AND the generated image file.
+`;
+       result = await generate(retryPrompt);
+       candidate = result.candidates?.[0];
+       const retryParts = extractParts(candidate);
+       
+       // Update if we got better results (or at least new text)
+       responseText = retryParts.text || responseText;
+       generatedImageBase64 = retryParts.img;
+       generatedImageMimeType = retryParts.mime;
     }
 
     if (!responseText) throw new Error("No text response received");
+    // ... rest of parsing logic ...
 
     // Parse JSON
     const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
