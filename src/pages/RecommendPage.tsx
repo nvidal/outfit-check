@@ -6,7 +6,7 @@ import { Logo } from '../components/Logo';
 import { BottomNav } from '../components/BottomNav';
 import { SettingsMenu } from '../components/SettingsMenu';
 import { OutfitImage } from '../components/OutfitImage';
-import { Sparkles, Shirt, RotateCcw, Check, X } from 'lucide-react';
+import { Sparkles, Shirt, RotateCcw, Check, X, Download } from 'lucide-react';
 
 interface RecommendationResult {
   user_analysis: string;
@@ -67,6 +67,16 @@ export const RecommendPage = () => {
     setResult(null);
     setStep('capture');
     setError(null);
+  };
+
+  const handleDownload = () => {
+    if (!result?.image) return;
+    const link = document.createElement('a');
+    link.href = result.image;
+    link.download = `outfit-check-${Date.now()}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -148,15 +158,24 @@ export const RecommendPage = () => {
 
                {/* Visual Prompt / Image Placeholder */}
                {result.image ? (
-                 <div className="rounded-2xl overflow-hidden mb-6 shadow-xl border border-white/10 relative animate-in fade-in duration-700">
+                 <div className="rounded-2xl overflow-hidden mb-6 shadow-xl border border-white/10 relative animate-in fade-in duration-700 group">
                     <img src={result.image} className="w-full h-auto object-cover" alt="Generated Outfit" />
+                    
+                    <button 
+                       onClick={handleDownload}
+                       className="absolute top-4 right-4 p-2.5 bg-black/40 backdrop-blur-md rounded-full text-white hover:bg-black/60 transition active:scale-95 z-10"
+                       title={t('download_image')}
+                    >
+                       <Download size={20} />
+                    </button>
+
                     <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-5 pt-20">
-                       <h3 className="text-xs font-black uppercase tracking-widest text-amber-300 mb-2">{t('the_look')}</h3>
+                       <h3 className="text-xs font-black uppercase tracking-widest text-amber-300 mb-2 drop-shadow-md">{t('the_look')}</h3>
                        <ul className="space-y-1.5">
                          {result.items.map((item, i) => (
                            <li key={i} className="flex items-start gap-2">
-                             <div className="h-1 w-1 rounded-full bg-white mt-1.5 shrink-0" />
-                             <span className="text-xs font-medium text-white/90 leading-relaxed shadow-sm">{item}</span>
+                             <div className="h-1 w-1 rounded-full bg-white mt-1.5 shrink-0 shadow-[0_0_5px_white]" />
+                             <span className="text-xs font-bold text-white leading-relaxed drop-shadow-md">{item}</span>
                            </li>
                          ))}
                        </ul>
