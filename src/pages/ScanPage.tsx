@@ -192,15 +192,14 @@ export const ScanPage = () => {
   if (personaResults && displayResult) {
     return (
       <div className="flex h-dvh flex-col bg-[#0a428d] text-white font-sans overflow-hidden relative">
-        {(isLoading || isSharing) && (
-          <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
-            <p className="text-xl font-black uppercase tracking-widest">
-              {isLoading ? t('analyzing') : t('generating_share', 'Preparing Outfit...')}
-            </p>
-                              </div>
-                            )}
-                            {image && (
+                {(isLoading || isSharing) && (
+                  <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 p-6">
+                    <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
+                    <p className="text-xl font-black uppercase tracking-widest text-center">
+                      {isLoading ? t('analyzing') : t('generating_share', 'Preparing Outfit...')}
+                    </p>
+                  </div>
+                )}                            {image && (
                               <ShareCard 
                                 ref={shareCardRef}
                                 image={image}
@@ -413,15 +412,14 @@ export const ScanPage = () => {
 
   return (
     <div className="flex h-dvh flex-col bg-[#0a428d] text-white font-sans overflow-hidden">
-      {(isLoading || isSharing) && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
-          <p className="text-xl font-black uppercase tracking-widest">
-            {isLoading ? t('analyzing') : t('generating_share', 'Preparing Outfit...')}
-          </p>
-        </div>
-      )}
-
+              {(isLoading || isSharing) && (
+                <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 p-6">
+                  <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
+                  <p className="text-xl font-black uppercase tracking-widest text-center">
+                    {isLoading ? t('analyzing') : t('generating_share', 'Preparing Outfit...')}
+                  </p>
+                </div>
+              )}
       <div className="flex-1 flex flex-col p-6 pb-24 min-h-0">
         <header className="relative mb-6 text-center shrink-0 flex items-center justify-between z-20">
           <div className="w-10" /> 

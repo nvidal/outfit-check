@@ -204,7 +204,7 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
   const prompt = `
 **Role:** Expert Personal Stylist.
 **Task:** 
-1. Analyze the user's photo (physique, skin tone, gender expression).
+1. Analyze the user's photo (physique, skin tone, gender).
 2. Recommend a COMPLETE outfit based on their request: "${userRequest}".
 3. Explain WHY it works for them.
 4. **GENERATE A PHOTOREALISTIC IMAGE** of the user (maintaining their face/body features) wearing this EXACT recommended outfit in a cinematic setting.

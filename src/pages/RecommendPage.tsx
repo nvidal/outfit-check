@@ -82,9 +82,9 @@ export const RecommendPage = () => {
   return (
     <div className="flex h-dvh flex-col bg-[#0a428d] text-white font-sans overflow-hidden">
       {isLoading && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 p-6">
           <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
-          <p className="text-xl font-black uppercase tracking-widest">{t('analyzing')}</p>
+          <p className="text-xl font-black uppercase tracking-widest text-center">{t('analyzing')}</p>
         </div>
       )}
 
