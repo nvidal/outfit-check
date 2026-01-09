@@ -207,7 +207,9 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
 1. Analyze the user's photo (physique, skin tone, gender).
 2. Recommend a COMPLETE outfit based on their request: "${userRequest}".
 3. Explain WHY it works for them.
-4. **GENERATE A PHOTOREALISTIC IMAGE** of the user (maintaining their face/body features) wearing this EXACT recommended outfit in a cinematic setting.
+4. **GENERATE A PHOTOREALISTIC IMAGE** of the user wearing this EXACT recommended outfit.
+   - **SAFETY OVERRIDE:** The image MUST be Safe For Work. If the original photo has skin exposure or poses that might trigger safety filters, **MODIFY them** to be neutral and fully clothed (fashion catalog style).
+   - **Identity Fallback:** If preserving the exact face triggers a block, generate a generic model with similar physical attributes instead. **Prioritize generating the OUTFIT image above all else.**
 
 **Output Language:** ${language} (Ensure all values are in ${language}).
 
