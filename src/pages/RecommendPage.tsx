@@ -6,7 +6,7 @@ import { Logo } from '../components/Logo';
 import { BottomNav } from '../components/BottomNav';
 import { SettingsMenu } from '../components/SettingsMenu';
 import { OutfitImage } from '../components/OutfitImage';
-import { Sparkles, Shirt, RotateCcw } from 'lucide-react';
+import { Sparkles, Shirt, RotateCcw, Check, X } from 'lucide-react';
 
 interface RecommendationResult {
   user_analysis: string;
@@ -15,6 +15,8 @@ interface RecommendationResult {
   reasoning: string;
   visual_prompt: string;
   image?: string; // Base64 or URL if generated
+  dos?: string[];
+  donts?: string[];
 }
 
 export const RecommendPage = () => {
@@ -88,8 +90,8 @@ export const RecommendPage = () => {
           {step === 'capture' && (
             <>
               <div className="text-center mb-2">
-                <h2 className="text-2xl font-black uppercase tracking-tight">Style Me</h2>
-                <p className="text-white/60 text-sm">Upload a photo so we can see your vibe.</p>
+                <h2 className="text-2xl font-black uppercase tracking-tight">{t('style_me_title')}</h2>
+                <p className="text-white/60 text-sm">{t('style_me_subtitle')}</p>
               </div>
               <div className="relative w-full flex-1 min-h-0 mx-auto">
                 <CameraCapture onCapture={handleCapture} onError={handleCaptureError} />
@@ -106,12 +108,12 @@ export const RecommendPage = () => {
               <div className="flex-1 flex flex-col gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-black uppercase tracking-widest text-amber-300">
-                    Where are you going?
+                    {t('occasion_question')}
                   </label>
                   <textarea
                     value={userRequest}
                     onChange={(e) => setUserRequest(e.target.value)}
-                    placeholder="E.g. Summer wedding in Italy, avoid black..."
+                    placeholder={t('occasion_placeholder')}
                     className="w-full bg-white/10 border-2 border-white/20 rounded-2xl p-4 text-white placeholder-white/40 focus:border-white focus:outline-none focus:ring-0 transition resize-none h-32"
                   />
                 </div>
@@ -123,13 +125,13 @@ export const RecommendPage = () => {
                     className="w-full flex items-center justify-center gap-2 rounded-2xl bg-white py-4 text-xl font-black uppercase tracking-widest text-[#0a428d] shadow-2xl transition enabled:hover:scale-[1.02] active:scale-95 disabled:opacity-50"
                   >
                     <Sparkles size={20} />
-                    Style Me
+                    {t('style_button')}
                   </button>
                   <button
                     onClick={() => setStep('capture')}
                     className="w-full mt-4 text-xs font-bold uppercase tracking-widest opacity-60"
                   >
-                    Back to Photo
+                    {t('back_to_photo')}
                   </button>
                 </div>
               </div>
@@ -145,23 +147,74 @@ export const RecommendPage = () => {
                </div>
 
                {/* Visual Prompt / Image Placeholder */}
-               <div className="bg-black/20 rounded-2xl p-6 border border-white/10 mb-6 relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20" />
-                  <Shirt className="h-12 w-12 text-white/20 absolute top-4 right-4" />
-                  
-                  <h3 className="text-xs font-black uppercase tracking-widest text-amber-300 mb-3 relative z-10">The Look</h3>
-                  <ul className="space-y-3 relative z-10">
-                    {result.items.map((item, i) => (
-                      <li key={i} className="flex items-start gap-3">
-                        <div className="h-1.5 w-1.5 rounded-full bg-white mt-2 shrink-0" />
-                        <span className="text-sm font-medium leading-relaxed">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-               </div>
+               {result.image ? (
+                 <div className="rounded-2xl overflow-hidden mb-6 shadow-xl border border-white/10 relative animate-in fade-in duration-700">
+                    <img src={result.image} className="w-full h-auto object-cover" alt="Generated Outfit" />
+                    <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-5 pt-20">
+                       <h3 className="text-xs font-black uppercase tracking-widest text-amber-300 mb-2">{t('the_look')}</h3>
+                       <ul className="space-y-1.5">
+                         {result.items.map((item, i) => (
+                           <li key={i} className="flex items-start gap-2">
+                             <div className="h-1 w-1 rounded-full bg-white mt-1.5 shrink-0" />
+                             <span className="text-xs font-medium text-white/90 leading-relaxed shadow-sm">{item}</span>
+                           </li>
+                         ))}
+                       </ul>
+                    </div>
+                 </div>
+               ) : (
+                 <div className="bg-black/20 rounded-2xl p-6 border border-white/10 mb-6 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20" />
+                    <Shirt className="h-12 w-12 text-white/20 absolute top-4 right-4" />
+                    
+                    <h3 className="text-xs font-black uppercase tracking-widest text-amber-300 mb-3 relative z-10">{t('the_look')}</h3>
+                    <ul className="space-y-3 relative z-10">
+                      {result.items.map((item, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <div className="h-1.5 w-1.5 rounded-full bg-white mt-2 shrink-0" />
+                          <span className="text-sm font-medium leading-relaxed">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                 </div>
+               )}
+
+               {/* Dos and Donts */}
+               {((result.dos?.length ?? 0) > 0 || (result.donts?.length ?? 0) > 0) && (
+                 <div className="grid grid-cols-2 gap-3 mb-6">
+                    {result.dos && result.dos.length > 0 && (
+                      <div className="bg-emerald-500/10 rounded-2xl p-4 border border-emerald-500/20">
+                        <h3 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">
+                          <Check size={12} strokeWidth={4} /> {t('dos') || 'DOS'}
+                        </h3>
+                        <ul className="space-y-2">
+                          {result.dos.map((item, i) => (
+                            <li key={i} className="text-xs text-emerald-100/90 leading-tight">
+                              • {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {result.donts && result.donts.length > 0 && (
+                      <div className="bg-rose-500/10 rounded-2xl p-4 border border-rose-500/20">
+                        <h3 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-rose-300 mb-3">
+                          <X size={12} strokeWidth={4} /> {t('donts') || 'DONTS'}
+                        </h3>
+                         <ul className="space-y-2">
+                          {result.donts.map((item, i) => (
+                            <li key={i} className="text-xs text-rose-100/90 leading-tight">
+                              • {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                 </div>
+               )}
 
                <div className="bg-white/5 rounded-2xl p-5 border border-white/10 mb-6">
-                 <h3 className="text-[10px] font-black uppercase tracking-widest text-white/50 mb-2">Your Vibe</h3>
+                 <h3 className="text-[10px] font-black uppercase tracking-widest text-white/50 mb-2">{t('your_vibe')}</h3>
                  <p className="text-sm text-white/90">{result.user_analysis}</p>
                </div>
 
@@ -170,7 +223,7 @@ export const RecommendPage = () => {
                  className="w-full flex items-center justify-center gap-2 rounded-2xl bg-white/10 border border-white/20 py-4 text-sm font-black uppercase tracking-widest text-white hover:bg-white/20 transition active:scale-95"
                >
                  <RotateCcw size={16} />
-                 Style Another
+                 {t('style_another')}
                </button>
             </div>
           )}

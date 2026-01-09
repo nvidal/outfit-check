@@ -198,7 +198,8 @@ interface RecommendOptions {
 
 export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language, userRequest }: RecommendOptions) => {
   const ai = new GoogleGenAI({ apiKey });
-  const model = "gemini-2.5-flash-image";
+  // 'gemini-2.5-flash-image' does not support JSON mode reliably. Using standard flash.
+  const model = "gemini-2.5-flash";
 
   const prompt = `
 **Role:** Expert Personal Stylist.
@@ -207,15 +208,23 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
 2. Recommend a COMPLETE outfit based on their request: "${userRequest}".
 3. Explain WHY it works for them.
 
-**Output Language:** ${language}
+**Output Language:** ${language} (Ensure all values are in ${language}).
+
+**Constraints:**
+- **VERY CONCISE**.
+- **Max 1 sentence** per reasoning.
+- **Bullet points** for items.
+- No fluff.
 
 **Response Format (JSON):**
 {
-  "user_analysis": "Brief description of the user's key features relevant to styling (e.g. 'Cool undertones, athletic build').",
-  "outfit_name": "Catchy name for the look",
+  "user_analysis": "Max 10 words description of user features.",
+  "outfit_name": "Short, catchy name",
   "items": ["Item 1", "Item 2", "Item 3"],
-  "reasoning": "Why this fits the user and the occasion.",
-  "visual_prompt": "A high-quality, photorealistic fashion photography shot of a [describe user features] wearing [describe outfit detailed] in a [describe setting] setting. Full body shot, cinematic lighting."
+  "reasoning": "Max 1 sentence explaining the choice.",
+  "dos": ["Do 1", "Do 2"],
+  "donts": ["Don't 1", "Don't 2"],
+  "visual_prompt": "Photorealistic full-body shot of a [user description from analysis] wearing [outfit details] in a [setting] setting. High fashion photography, detailed texture, cinematic lighting, 8k."
 }
 `;
 
@@ -240,9 +249,30 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
     const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(jsonString);
 
-    // Attempt Image Generation (Experimental / Placeholder)
-    // Note: If the SDK/Key supports it, we would call ai.models.generateImage here.
-    // For now, we return the parsed text result.
+    // Generate Image using Imagen 3
+    try {
+      if (parsed.visual_prompt) {
+        // @ts-ignore - The SDK types might be slightly out of sync or strict, casting to any or ignoring
+        const imageResponse = await ai.models.generateImages({
+          model: 'imagen-3.0-generate-001',
+          prompt: parsed.visual_prompt,
+          config: {
+             numberOfImages: 1,
+             aspectRatio: '3:4',
+             personGeneration: 'allow_adult',
+          }
+        });
+        
+        const generatedImage = imageResponse.generatedImages?.[0]?.image;
+        if (generatedImage?.imageBytes) {
+           parsed.image = `data:image/jpeg;base64,${generatedImage.imageBytes}`;
+        }
+      }
+    } catch (imgErr) {
+      console.warn("Image generation failed:", imgErr);
+      // Continue without image
+    }
+
     return parsed;
 
   } catch (err) {
