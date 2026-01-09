@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../hooks/useAuth';
 import { CameraCapture } from '../components/CameraCapture';
 import { Logo } from '../components/Logo';
 import { BottomNav } from '../components/BottomNav';
@@ -21,6 +22,7 @@ interface RecommendationResult {
 
 export const RecommendPage = () => {
   const { t, i18n } = useTranslation();
+  const { session } = useAuth();
   const [image, setImage] = useState<string | null>(null);
   const [userRequest, setUserRequest] = useState('');
   const [step, setStep] = useState<'capture' | 'details' | 'result'>('capture');
@@ -45,11 +47,12 @@ export const RecommendPage = () => {
     setError(null);
 
     try {
+      const headers = session ? { Authorization: `Bearer ${session.access_token}` } : {};
       const response = await axios.post('/.netlify/functions/recommend', {
         image,
         text: userRequest,
         language: i18n.language
-      });
+      }, { headers });
 
       setResult(response.data);
       setStep('result');
