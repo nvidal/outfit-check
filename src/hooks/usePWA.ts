@@ -9,41 +9,43 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+// Extend Navigator for iOS standalone property
+interface NavigatorWithStandalone extends Navigator {
+  standalone?: boolean;
+}
+
+const checkStandalone = () => {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(display-mode: standalone)').matches 
+    || (window.navigator as NavigatorWithStandalone).standalone === true;
+};
+
+const getIOS = () => {
+  if (typeof window === 'undefined') return false;
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) || 
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+};
+
+const getMacSafari = () => {
+  if (typeof window === 'undefined') return false;
+  const ios = getIOS();
+  const isMac = /Macintosh/i.test(navigator.userAgent);
+  const isSafari = /Safari/i.test(navigator.userAgent) && !/Chrome|CriOS|FxiOS|EdgiOS|OPiOS/i.test(navigator.userAgent);
+  return isMac && isSafari && !ios;
+};
+
 export const usePWA = () => {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isMacSafari, setIsMacSafari] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [isInstallable, setIsInstallable] = useState(false);
+  const [isIOS] = useState(getIOS);
+  const [isMacSafari] = useState(getMacSafari);
+  const [isStandalone, setIsStandalone] = useState(checkStandalone);
+  const [isInstallable, setIsInstallable] = useState(() => {
+    const standalone = checkStandalone();
+    const apple = getIOS() || getMacSafari();
+    return apple && !standalone;
+  });
 
   useEffect(() => {
-    const checkStandalone = () => {
-      return window.matchMedia('(display-mode: standalone)').matches 
-        || (window.navigator as any).standalone === true;
-    };
-
-    if (typeof window !== 'undefined') {
-      const standalone = checkStandalone();
-      
-      // Strict iOS detection
-      const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || 
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      
-      // Strict macOS Safari detection (Safari on Mac doesn't support beforeinstallprompt)
-      const isMac = /Macintosh/i.test(navigator.userAgent);
-      const isSafari = /Safari/i.test(navigator.userAgent) && !/Chrome|CriOS|FxiOS|EdgiOS|OPiOS/i.test(navigator.userAgent);
-      const macSafari = isMac && isSafari && !ios;
-
-      setIsStandalone(standalone);
-      setIsIOS(ios);
-      setIsMacSafari(macSafari);
-      
-      // Manual "Installable" flag for Apple browsers that don't support beforeinstallprompt
-      if ((ios || macSafari) && !standalone) {
-        setIsInstallable(true);
-      }
-    }
-
     const handler = (e: Event) => {
       // Prevent the default browser prompt
       e.preventDefault();
@@ -84,7 +86,7 @@ export const usePWA = () => {
     if (!installPrompt) return;
 
     // Show the native prompt for Chrome/Edge
-    installPrompt.prompt();
+    await installPrompt.prompt();
     
     // Wait for the user to respond to the prompt
     const { outcome } = await installPrompt.userChoice;

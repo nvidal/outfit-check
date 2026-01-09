@@ -127,8 +127,8 @@ Analyze the attached outfit image.
        
        if (!result.text) throw new Error("No text from tool");
        
-    } catch (e) {
-       console.warn("Search timed out or failed, falling back to fast generation.", e instanceof Error ? e.message : e);
+    } catch {
+       console.warn("Search timed out or failed, falling back to fast generation.");
        // Fallback: Run without search (Fast)
        const fallbackPrompt = prompt
          .replace("Use Google Search ONLY if you need to verify a specific, niche, or very recent micro-trend. Prioritize speed and internal knowledge.", "Focus on general style principles.");
@@ -196,6 +196,24 @@ interface RecommendOptions {
   userRequest: string;
 }
 
+interface Part {
+  text?: string;
+  inlineData?: {
+    data: string;
+    mimeType: string;
+  };
+}
+
+interface Candidate {
+  content?: {
+    parts?: Part[];
+  };
+}
+
+interface GenerateContentResponse {
+  candidates?: Candidate[];
+}
+
 export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language, userRequest }: RecommendOptions) => {
   const ai = new GoogleGenAI({ apiKey });
   // Use 'gemini-2.5-flash-image' for single-request multimodal generation (Text + Image)
@@ -247,14 +265,14 @@ JSON Structure:
         model,
         contents: [currentPrompt, imagePart],
       };
-      return await ai.models.generateContent(config) as unknown as any;
+      return await ai.models.generateContent(config) as unknown as GenerateContentResponse;
     };
 
     let result = await generate(prompt);
     let candidate = result.candidates?.[0];
 
     // Helper to extract parts
-    const extractParts = (cand: any) => {
+    const extractParts = (cand: Candidate | undefined) => {
        let text = "";
        let img = null;
        let mime = null;
@@ -291,14 +309,13 @@ ${prompt}
     }
 
     if (!responseText) throw new Error("No text response received");
-    // ... rest of parsing logic ...
 
     // Parse JSON
     const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
     let parsed;
     try {
         parsed = JSON.parse(jsonString);
-    } catch (e) {
+    } catch {
         // Attempt to find JSON block if mixed with other text
         const match = jsonString.match(/\{[\s\S]*\}/);
         if (match) {
