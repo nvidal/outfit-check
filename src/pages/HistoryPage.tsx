@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { BottomNav } from '../components/BottomNav';
 import { Logo } from '../components/Logo';
 import { ShareCard } from '../components/ShareCard';
-import { Share2, Sparkles, Trash2, Shirt } from 'lucide-react';
+import { Share2, Sparkles, Trash2 } from 'lucide-react';
 import { shareOutfit } from '../lib/share';
 import type { HistoryItem } from '../types';
 
@@ -216,8 +216,8 @@ export const HistoryPage: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-sm truncate">{item.data.outfit_name}</h3>
                         <div className="flex items-center gap-2 text-xs opacity-70 mt-1">
-                          <Shirt size={12} className="text-purple-300" />
-                          <span className="font-bold text-purple-300 text-[10px] uppercase tracking-wider">{t('nav_style')}</span>
+                          <Sparkles size={12} className="text-amber-300" />
+                          <span className="font-bold text-amber-300 text-[10px] uppercase tracking-wider">{t('style_button')}</span>
                         </div>
                       </div>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { CameraCapture } from '../components/CameraCapture';
@@ -23,11 +24,16 @@ interface RecommendationResult {
 export const RecommendPage = () => {
   const { t, i18n } = useTranslation();
   const { session } = useAuth();
-  const [image, setImage] = useState<string | null>(null);
+  const location = useLocation();
+  const locationState = location.state as { image?: string; result?: RecommendationResult } | null;
+
+  const [image, setImage] = useState<string | null>(locationState?.image || null);
   const [userRequest, setUserRequest] = useState('');
-  const [step, setStep] = useState<'capture' | 'details' | 'result'>('capture');
+  const [step, setStep] = useState<'capture' | 'details' | 'result'>(
+    locationState?.result ? 'result' : (locationState?.image ? 'details' : 'capture')
+  );
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<RecommendationResult | null>(null);
+  const [result, setResult] = useState<RecommendationResult | null>(locationState?.result || null);
   const [error, setError] = useState<string | null>(null);
 
   const handleCapture = (base64: string) => {
