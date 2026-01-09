@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Logo } from '../components/Logo';
 import { Sparkles, ScanEye, Flame, Flower2, ChevronsDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { OutfitImage } from '../components/OutfitImage';
 import type { HistoryItem, Mode } from '../types';
 
 export const SharePage: React.FC = () => {
@@ -15,6 +16,7 @@ export const SharePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedPersona, setSelectedPersona] = useState<Mode>('editor');
   const [personaDropdownOpen, setPersonaDropdownOpen] = useState(false);
+  const [activeHighlight, setActiveHighlight] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchScan = async () => {
@@ -64,6 +66,12 @@ export const SharePage: React.FC = () => {
 
   const result = data.ai_results.find(r => r.persona === selectedPersona) || data.ai_results[0];
 
+  const handlePersonaSelect = (persona: Mode) => {
+    setSelectedPersona(persona);
+    setActiveHighlight(null);
+    setPersonaDropdownOpen(false);
+  };
+
   return (
     <div className="flex h-dvh flex-col bg-[#0a428d] text-white p-6 font-sans overflow-y-auto">
       <header className="relative mb-6 text-center shrink-0 flex items-center justify-between z-50">
@@ -88,10 +96,7 @@ export const SharePage: React.FC = () => {
                 return (
                   <button
                     key={persona}
-                    onClick={() => {
-                      setSelectedPersona(persona);
-                      setPersonaDropdownOpen(false);
-                    }}
+                    onClick={() => handlePersonaSelect(persona)}
                     className="flex w-full items-center gap-3 px-5 py-4 text-left text-xs font-black uppercase tracking-widest text-white hover:bg-white/10 transition border-b border-white/5 last:border-0"
                   >
                     <Icon size={18} />
@@ -105,14 +110,14 @@ export const SharePage: React.FC = () => {
       </header>
 
       <main className="flex flex-1 flex-col gap-6 max-w-lg mx-auto w-full pb-8">
-        <div className="relative aspect-3/4 w-full max-h-[60vh] mx-auto overflow-hidden rounded-3xl border-4 border-blue-400/40 shadow-2xl shrink-0">
-          <img src={data.image_url} alt="Outfit" className="h-full w-full object-cover" />
-          
-          <div className="absolute bottom-3 right-3 flex items-center gap-2 rounded-xl bg-black/60 px-3 py-1 backdrop-blur-md border border-white/10">
-            <span className="text-[10px] font-black uppercase tracking-widest opacity-70">{t('score')}</span>
-            <span className="text-xl font-black">{result.score}/10</span>
-          </div>
-        </div>
+        <OutfitImage 
+          image={data.image_url} 
+          highlights={result.highlights}
+          activeHighlight={activeHighlight}
+          score={result.score}
+          showScore={true}
+          className="max-h-[60vh]"
+        />
 
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="flex items-center gap-2 text-amber-300">
@@ -124,6 +129,23 @@ export const SharePage: React.FC = () => {
 
           <h2 className="text-2xl font-black tracking-tight">{result.title}</h2>
           <p className="text-lg leading-snug opacity-90 italic">"{result.critique}"</p>
+
+          {/* Highlights List */}
+          <div className="grid gap-2 mt-2">
+            {result.highlights.map((h, i) => (
+              <button 
+                key={i} 
+                onClick={() => setActiveHighlight(activeHighlight === i ? null : i)}
+                className={`flex items-center gap-3 rounded-xl p-2.5 border transition-all text-left
+                  ${activeHighlight === i 
+                    ? 'bg-white/20 border-white shadow-lg scale-[1.01]' 
+                    : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+              >
+                <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${h.type === 'good' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' : 'bg-rose-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]'}`} />
+                <span className="text-xs font-bold opacity-90">{h.label}</span>
+              </button>
+            ))}
+          </div>
 
           <div className="rounded-2xl bg-white/10 p-5 border border-white/20 shadow-lg">
             <div className="flex items-center gap-2 mb-1">

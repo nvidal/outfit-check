@@ -8,6 +8,7 @@ import { Logo } from '../components/Logo';
 import { BottomNav } from '../components/BottomNav';
 import { SettingsMenu } from '../components/SettingsMenu';
 import { ShareCard } from '../components/ShareCard';
+import { OutfitImage } from '../components/OutfitImage';
 import { useAuth } from '../hooks/useAuth';
 import { Sparkles, Lock, Share2, ScanEye, Flame, Flower2, ChevronsDown } from 'lucide-react';
 import { shareOutfit } from '../lib/share';
@@ -197,153 +198,163 @@ export const ScanPage = () => {
             <p className="text-xl font-black uppercase tracking-widest">
               {isLoading ? t('analyzing') : t('generating_share', 'Preparing Outfit...')}
             </p>
-          </div>
-        )}
-        {image && (
-          <ShareCard 
-            ref={shareCardRef}
-            image={image}
-            score={displayResult.score}
-            highlights={displayResult.highlights}
-          />
-        )}
+                    </div>
+                  )}
+                  {image && (
+                    <div className="sr-only">
+                      <ShareCard 
+                        ref={shareCardRef}
+                        image={image}
+                        score={displayResult.score}
+                        highlights={displayResult.highlights}
+                      />
+                    </div>
+                  )}
+          
+                  <div className="flex-1 overflow-y-auto p-6 pb-24">
+                  <header className="relative mb-8 shrink-0 flex items-center justify-center z-20 min-h-[48px]">
 
-        <div className="flex-1 overflow-y-auto p-6 pb-24">
-          <header className="relative mb-8 shrink-0 flex items-center justify-center z-20 min-h-[48px]">
-            {/* Centered Persona Selector */}
-            <div className="relative flex flex-col items-center gap-1.5">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">{t('persona_label')}</span>
-              <button
-                type="button"
-                onClick={() => setPersonaDropdownOpen((open) => !open)}
-                className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-black uppercase tracking-wide text-white shadow-sm transition hover:bg-white/10"
-              >
-                <span className="flex items-center gap-2.5">
-                  {(() => {
-                    const Icon = selectedPersona === 'editor'
-                      ? ScanEye
-                      : selectedPersona === 'hypebeast'
-                        ? Flame
-                        : Flower2;
-                    return <Icon size={18} />;
-                  })()}
-                  <span className="text-xs font-black uppercase tracking-[0.2em]">
-                    {t(`mode_${selectedPersona}`)}
-                  </span>
-                </span>
-                <ChevronsDown size={16} className="opacity-50" />
-              </button>
+                    {/* Centered Persona Selector */}
 
-              {personaDropdownOpen && (
-                <div className="absolute top-full mt-2 w-56 bg-[#0a428d] border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-50 backdrop-blur-md">
-                  {(['editor', 'hypebeast', 'boho'] as Mode[]).map((persona) => {
-                    const Icon = persona === 'editor'
-                      ? ScanEye
-                      : persona === 'hypebeast'
-                        ? Flame
-                        : Flower2;
-                    return (
+                    <div className="relative flex flex-col items-center gap-1.5">
+
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">{t('persona_label')}</span>
+
                       <button
-                        key={persona}
+
                         type="button"
-                        onClick={() => handlePersonaSelect(persona)}
-                        className={`flex w-full items-center gap-3 px-5 py-4 text-left text-xs font-black uppercase tracking-widest text-white hover:bg-white/10 transition ${persona === 'boho' ? '' : 'border-b border-white/5'}`}
+
+                        onClick={() => setPersonaDropdownOpen((open) => !open)}
+
+                        className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-black uppercase tracking-wide text-white shadow-sm transition hover:bg-white/10"
+
                       >
-                        <Icon size={18} />
-                        {t(`mode_${persona}`)}
+
+                        <span className="flex items-center gap-2.5">
+
+                          {(() => {
+
+                            const Icon = selectedPersona === 'editor'
+
+                              ? ScanEye
+
+                              : selectedPersona === 'hypebeast'
+
+                                ? Flame
+
+                                : Flower2;
+
+                            return <Icon size={18} />;
+
+                          })()}
+
+                          <span className="text-xs font-black uppercase tracking-[0.2em]">
+
+                            {t(`mode_${selectedPersona}`)}
+
+                          </span>
+
+                        </span>
+
+                        <ChevronsDown size={16} className="opacity-50" />
+
                       </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
 
-            {/* Right-aligned Share Button */}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2">
-              <button 
-                onClick={handleShare}
-                className="p-2.5 bg-white/10 rounded-full hover:bg-white/20 transition active:scale-95"
-                title={t('share', 'Share')}
-              >
-                <Share2 size={20} />
-              </button>
-            </div>
-          </header>
+        
 
-          <main className="flex flex-col gap-4 max-w-lg mx-auto w-full">
-            <div className="relative aspect-[3/4] w-full mx-auto max-h-[55vh] overflow-hidden rounded-2xl border-4 border-blue-400/40 shadow-xl shrink-0">
-              <img src={image!} alt="Outfit" className="h-full w-full object-cover" />
-              
-              {/* Visual Highlights Overlay */}
-              {displayResult.highlights.map((h, i) => {
-                const isActive = activeHighlight === null || activeHighlight === i;
-                
-                // New Point-based Rendering
-                if (h.point_2d) {
-                  const [y, x] = h.point_2d;
-                  const top = y / 10;
-                  const left = x / 10;
-                  
-                  return (
-                    <div
-                      key={i}
-                      className={`absolute rounded-full transition-all duration-500
-                        ${h.type === 'good' ? 'shadow-[0_0_20px_rgba(52,211,153,0.5)]' : 'shadow-[0_0_20px_rgba(248,113,113,0.5)]'}
-                        ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}
-                      style={{
-                        top: `${top}%`,
-                        left: `${left}%`,
-                        width: '12%', 
-                        paddingBottom: '12%', 
-                        transform: 'translate(-50%, -50%)',
-                        backgroundColor: h.type === 'good' ? 'rgba(52, 211, 153, 0.7)' : 'rgba(248, 113, 113, 0.7)',
-                      }}
-                    >
-                      <div className={`absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded px-1.5 py-0.5 text-[8px] font-black uppercase tracking-tighter text-white
-                        ${h.type === 'good' ? 'bg-emerald-500' : 'bg-rose-500'}`}>
-                        {h.label}
-                      </div>
+                      {personaDropdownOpen && (
+
+                        <div className="absolute top-full mt-2 w-56 bg-[#0a428d] border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-50 backdrop-blur-md">
+
+                          {(['editor', 'hypebeast', 'boho'] as Mode[]).map((persona) => {
+
+                            const Icon = persona === 'editor'
+
+                              ? ScanEye
+
+                              : persona === 'hypebeast'
+
+                                ? Flame
+
+                                : Flower2;
+
+                            return (
+
+                              <button
+
+                                key={persona}
+
+                                type="button"
+
+                                onClick={() => handlePersonaSelect(persona)}
+
+                                className={`flex w-full items-center gap-3 px-5 py-4 text-left text-xs font-black uppercase tracking-widest text-white hover:bg-white/10 transition ${persona === 'boho' ? '' : 'border-b border-white/5'}`}
+
+                              >
+
+                                <Icon size={18} />
+
+                                {t(`mode_${persona}`)}
+
+                              </button>
+
+                            );
+
+                          })}
+
+                        </div>
+
+                      )}
+
                     </div>
-                  );
-                }
 
-                // Fallback: Box Rendering
-                if (h.box_2d) {
-                  const [ymin, xmin, ymax, xmax] = h.box_2d;
-                  const top = ymin / 10;
-                  const left = xmin / 10;
-                  const width = (xmax - xmin) / 10;
-                  const height = (ymax - ymin) / 10;
-                  
-                  return (
-                    <div
-                      key={i}
-                      className={`absolute border-2 rounded-lg transition-all duration-500 
-                        ${h.type === 'good' ? 'border-emerald-400 bg-emerald-400/10' : 'border-rose-400 bg-rose-400/10'}
-                        ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
-                      style={{
-                        top: `${top}%`,
-                        left: `${left}%`,
-                        width: `${width}%`,
-                        height: `${height}%`,
-                      }}
-                    >
-                      <div className={`absolute -top-6 left-0 whitespace-nowrap rounded px-1.5 py-0.5 text-[8px] font-black uppercase tracking-tighter text-white
-                        ${h.type === 'good' ? 'bg-emerald-500' : 'bg-rose-500'}`}>
-                        {h.label}
-                      </div>
+        
+
+                    {/* Right-aligned Share Button */}
+
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2">
+
+                      <button 
+
+                        onClick={handleShare}
+
+                        className="p-2.5 bg-white/10 rounded-full hover:bg-white/20 transition active:scale-95"
+
+                        title={t('share', 'Share')}
+
+                      >
+
+                        <Share2 size={20} />
+
+                      </button>
+
                     </div>
-                  );
-                }
-                return null;
-              })}
 
-              <div className="absolute bottom-2 right-2 flex items-center gap-2 rounded-lg bg-black/60 px-2 py-1 backdrop-blur-md border border-white/10">
-                <span className="text-lg font-black">{displayResult.score}/10</span>
-              </div>
-            </div>
+                  </header>
 
-            <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        
+
+                  <main className="flex flex-col gap-4 max-w-lg mx-auto w-full">
+
+                    <OutfitImage 
+
+                      image={image!} 
+
+                      highlights={displayResult.highlights}
+
+                      activeHighlight={activeHighlight}
+
+                      score={displayResult.score}
+
+                      showScore={true}
+
+                      className="max-h-[55vh]"
+
+                    />
+
+        
+
+                    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700">
               <h2 className="text-xl font-black tracking-tight text-center">{displayResult.title}</h2>
 
               <div className="bg-white/5 rounded-2xl p-4 border border-white/10 shadow-inner">

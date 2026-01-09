@@ -4,6 +4,7 @@ import { Camera, Check, X, Pencil } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import type { Area } from 'react-easy-crop';
 import { getCroppedImg } from '../lib/cropImage';
+import { OutfitImage } from './OutfitImage';
 
 interface CameraCaptureProps {
   onCapture: (base64Image: string) => void;
@@ -174,13 +175,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onError
           <span className="font-black text-sm uppercase tracking-widest">{t('upload_btn')}</span>
         </button>
       ) : (
-        <div className="relative h-full min-h-[200px] rounded-3xl overflow-hidden shadow-2xl border-4 border-blue-400/40 bg-black">
-          <img 
-            src={preview} 
-            alt="Outfit Preview" 
-            className="w-full h-full object-cover"
+        <div className="relative h-full">
+          <OutfitImage 
+            image={preview} 
+            className="h-full border-blue-400/40"
           />
-          <div className="absolute bottom-4 right-4 flex gap-3">
+          <div className="absolute bottom-4 right-4 flex gap-3 z-10">
             <button
               onClick={handleEditClick}
               className="bg-white p-3 rounded-2xl shadow-xl text-[#0a428d] transition active:scale-90"

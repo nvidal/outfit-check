@@ -102,12 +102,14 @@ export const HistoryPage: React.FC = () => {
         </div>
       )}
       {shareItem && currentBestResult && (
-        <ShareCard 
-          ref={shareCardRef}
-          image={shareItem.image_url}
-          score={currentBestResult.score}
-          highlights={currentBestResult.highlights}
-        />
+        <div className="sr-only">
+          <ShareCard 
+            ref={shareCardRef}
+            image={shareItem.image_url}
+            score={currentBestResult.score}
+            highlights={currentBestResult.highlights}
+          />
+        </div>
       )}
 
       <header className="relative flex items-center justify-center shrink-0 p-6 pb-2">
