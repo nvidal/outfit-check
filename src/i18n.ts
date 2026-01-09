@@ -119,7 +119,7 @@ const resources = {
       "dos": "Sí",
       "donts": "No",
       "your_vibe": "Tu Vibe",
-      "style_another": "Vestir otro",
+      "style_another": "Probar otro estilo",
       "my_outfits": "Mis Outfits",
       "no_history": "Aún no hay outfits.",
       "start_scanning": "Chequea tu primer look",

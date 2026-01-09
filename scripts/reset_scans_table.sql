@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS styles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id TEXT,
   image_url TEXT NOT NULL,
+  generated_image_url TEXT,
   request_text TEXT NOT NULL,
   language VARCHAR(5) NOT NULL,
   result JSONB NOT NULL,
