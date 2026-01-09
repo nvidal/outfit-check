@@ -98,7 +98,7 @@ export const SharePage: React.FC = () => {
                   <p className="text-sm text-white/80 italic">"{result.reasoning}"</p>
                 </div>
 
-                <div className="rounded-2xl overflow-hidden mb-6 shadow-xl border border-white/10 relative animate-in fade-in duration-700">
+                <div className="rounded-2xl overflow-hidden mb-6 shadow-xl relative animate-in fade-in duration-700">
                     <img src={imageUrl} className="w-full h-auto object-cover" alt="Generated Outfit" />
                     <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-5 pt-20">
                       <h3 className="text-xs font-black uppercase tracking-widest text-amber-300 mb-2 drop-shadow-md">{t('the_look')}</h3>
@@ -116,7 +116,7 @@ export const SharePage: React.FC = () => {
                 {((result.dos?.length ?? 0) > 0 || (result.donts?.length ?? 0) > 0) && (
                   <div className="grid grid-cols-2 gap-3 mb-6">
                       {result.dos && result.dos.length > 0 && (
-                        <div className="bg-emerald-500/10 rounded-2xl p-4 border border-emerald-500/20">
+                        <div className="bg-emerald-500/10 rounded-2xl p-4 shadow-lg">
                           <h3 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">
                             <Check size={12} strokeWidth={4} /> {t('dos') || 'DOS'}
                           </h3>
@@ -128,7 +128,7 @@ export const SharePage: React.FC = () => {
                         </div>
                       )}
                       {result.donts && result.donts.length > 0 && (
-                        <div className="bg-rose-500/10 rounded-2xl p-4 border border-rose-500/20">
+                        <div className="bg-rose-500/10 rounded-2xl p-4 shadow-lg">
                           <h3 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-rose-300 mb-3">
                             <X size={12} strokeWidth={4} /> {t('donts') || 'DONTS'}
                           </h3>
@@ -235,7 +235,7 @@ export const SharePage: React.FC = () => {
 
           <h2 className="text-3xl font-black tracking-tight text-white">{result.title}</h2>
           
-          <div className="bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl">
+          <div className="bg-white/10 rounded-2xl p-6 shadow-xl">
             <p className="text-xl leading-relaxed text-white italic font-medium">"{result.critique}"</p>
           </div>
 
@@ -256,7 +256,7 @@ export const SharePage: React.FC = () => {
             ))}
           </div>
 
-          <div className="rounded-2xl bg-amber-400/15 p-6 border border-amber-400/30 shadow-lg">
+          <div className="rounded-2xl bg-amber-400/15 p-6 shadow-lg">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles size={18} className="text-amber-300" />
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200">{t('improvement_tip')}</p>

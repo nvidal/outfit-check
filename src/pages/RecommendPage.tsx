@@ -170,7 +170,7 @@ export const RecommendPage = () => {
 
                {/* Visual Prompt / Image Placeholder */}
                {result.image ? (
-                 <div className="rounded-2xl overflow-hidden mb-6 shadow-xl border border-white/10 relative animate-in fade-in duration-700 group">
+                 <div className="rounded-2xl overflow-hidden mb-6 shadow-xl relative animate-in fade-in duration-700 group">
                     <img src={result.image} className="w-full h-auto object-cover" alt="Generated Outfit" />
                     
                     <button 
@@ -194,7 +194,7 @@ export const RecommendPage = () => {
                     </div>
                  </div>
                ) : (
-                 <div className="bg-black/20 rounded-2xl p-6 border border-white/10 mb-6 relative overflow-hidden group">
+                 <div className="bg-black/20 rounded-2xl p-6 mb-6 relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20" />
                     <Shirt className="h-12 w-12 text-white/20 absolute top-4 right-4" />
                     
@@ -214,7 +214,7 @@ export const RecommendPage = () => {
                {((result.dos?.length ?? 0) > 0 || (result.donts?.length ?? 0) > 0) && (
                  <div className="grid grid-cols-2 gap-3 mb-6">
                     {result.dos && result.dos.length > 0 && (
-                      <div className="bg-emerald-500/10 rounded-2xl p-4 border border-emerald-500/20">
+                      <div className="bg-emerald-500/10 rounded-2xl p-4 shadow-lg">
                         <h3 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-3">
                           <Check size={12} strokeWidth={4} /> {t('dos') || 'DOS'}
                         </h3>
@@ -228,7 +228,7 @@ export const RecommendPage = () => {
                       </div>
                     )}
                     {result.donts && result.donts.length > 0 && (
-                      <div className="bg-rose-500/10 rounded-2xl p-4 border border-rose-500/20">
+                      <div className="bg-rose-500/10 rounded-2xl p-4 shadow-lg">
                         <h3 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-rose-300 mb-3">
                           <X size={12} strokeWidth={4} /> {t('donts') || 'DONTS'}
                         </h3>

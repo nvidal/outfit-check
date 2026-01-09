@@ -353,7 +353,7 @@ export const ScanPage = () => {
                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700">
               <h2 className="text-2xl font-black tracking-tight text-center text-white">{displayResult.title}</h2>
 
-              <div className="bg-white/10 rounded-2xl p-5 border border-white/20 shadow-xl">
+              <div className="bg-white/10 rounded-2xl p-5 shadow-xl">
                 <p className="text-base leading-relaxed text-white text-center italic font-medium">"{displayResult.critique}"</p>
               </div>
 
@@ -371,7 +371,7 @@ export const ScanPage = () => {
                     className={`flex items-center gap-3 rounded-xl p-3 border transition-all text-left
                       ${activeHighlight === i 
                         ? 'bg-white/30 border-white shadow-lg scale-[1.01]' 
-                        : 'bg-white/10 border-white/20 hover:bg-white/15'}`}
+                        : 'bg-white/10 border-transparent hover:bg-white/15'}`}
                   >
                     <div className={`h-3 w-3 shrink-0 rounded-full ${h.type === 'good' ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]' : 'bg-rose-400 shadow-[0_0_10px_rgba(248,113,113,0.8)]'}`} />
                     <span className="text-xs font-bold text-white">{h.label}</span>
@@ -379,7 +379,7 @@ export const ScanPage = () => {
                 ))}
               </div>
 
-              <div className="rounded-xl bg-amber-400/15 p-5 border border-amber-400/30 shadow-lg mt-2">
+              <div className="rounded-xl bg-amber-400/15 p-5 shadow-lg mt-2">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles size={16} className="text-amber-300" />
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200">{t('improvement_tip')}</p>

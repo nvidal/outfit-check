@@ -28,7 +28,7 @@ export const OutfitImage: React.FC<OutfitImageProps> = ({
   aspectRatio = "aspect-[3/4]"
 }) => {
   return (
-    <div className={`relative ${aspectRatio} w-full overflow-hidden rounded-3xl border border-white/10 shadow-2xl shrink-0 bg-black ${className}`}>
+    <div className={`relative ${aspectRatio} w-full overflow-hidden rounded-2xl shadow-xl shrink-0 bg-black ${className}`}>
       <img 
         src={image} 
         alt="Outfit" 
