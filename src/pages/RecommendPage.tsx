@@ -232,11 +232,6 @@ export const RecommendPage = () => {
                  </div>
                )}
 
-               <div className="bg-white/5 rounded-2xl p-5 border border-white/10 mb-6">
-                 <h3 className="text-[10px] font-black uppercase tracking-widest text-white/50 mb-2">{t('your_vibe')}</h3>
-                 <p className="text-sm text-white/90">{result.user_analysis}</p>
-               </div>
-
                <button
                  onClick={handleReset}
                  className="w-full flex items-center justify-center gap-2 rounded-2xl bg-white/10 border border-white/20 py-4 text-sm font-black uppercase tracking-widest text-white hover:bg-white/20 transition active:scale-95"
