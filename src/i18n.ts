@@ -51,6 +51,8 @@ const resources = {
       "install_app": "Install App",
       "install_ios_title": "Install Outfit Check",
       "install_ios_instructions": "To install this app on your iPhone, tap the Share icon in Safari and select 'Add to Home Screen'.",
+      "install_macos_title": "Install Outfit Check",
+      "install_macos_instructions": "To install this app on your Mac, go to 'File' > 'Add to Dock' in the Safari menu bar.",
       "share_message": "Look at my Outfit Check,\nI got a {{score}}/10! What do you think?\n{{url}}",
       "confirm": "Confirm",
       "cancel": "Cancel"
@@ -104,6 +106,8 @@ const resources = {
       "install_app": "Instalar App",
       "install_ios_title": "Instalar Outfit Check",
       "install_ios_instructions": "Para instalar esta app en tu iPhone, toca el icono de Compartir en Safari y selecciona 'Añadir a la pantalla de inicio'.",
+      "install_macos_title": "Instalar Outfit Check",
+      "install_macos_instructions": "Para instalar esta app en tu Mac, ve a 'Archivo' > 'Añadir al Dock' en la barra de menú de Safari.",
       "share_message": "Mira mi Outfit Check,\n¡Obtuve un {{score}}/10! ¿Qué te parece?\n{{url}}",
       "confirm": "Confirmar",
       "cancel": "Cancelar"
