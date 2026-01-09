@@ -68,9 +68,28 @@ export default async function handler(req: Request) {
     return formatError("db_url", 500, lang);
   }
   const dbClient = new Client({ connectionString: dbUrl });
+  const clientIp = req.headers.get("x-forwarded-for")?.split(',')[0] || "unknown";
 
   try {
     await dbClient.connect();
+
+    // Rate Limiting
+    const queryPromise = dbClient.query(
+      `SELECT COUNT(*) FROM styles 
+       WHERE (ip_address = $1 OR user_id = $2) 
+       AND created_at > NOW() - INTERVAL '24 hours'`,
+      [clientIp, userId]
+    );
+    // Timeout for query to avoid hanging
+    const queryTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Query Timeout")), 5000));
+    
+    const usageRes = await Promise.race([queryPromise, queryTimeout]) as { rows: { count: string }[] };
+    const count = parseInt(usageRes.rows[0].count);
+    const LIMIT = userId ? 50 : 3;
+
+    if (count >= LIMIT) {
+      return formatError(userId ? "limit_user" : "limit_guest", 429, lang);
+    }
 
     // 1. Upload Input Image
     const { mimeType, base64 } = parseImagePayload(image);
@@ -106,15 +125,16 @@ export default async function handler(req: Request) {
 
     // 3. Save to DB
     await dbClient.query(
-      `INSERT INTO styles (user_id, image_url, generated_image_url, request_text, language, result) 
-       VALUES ($1, $2, $3, $4, $5, $6)`,
+      `INSERT INTO styles (user_id, image_url, generated_image_url, request_text, language, result, ip_address) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         userId,
         imageUrl,
         generatedImageUrl,
         text,
         lang,
-        JSON.stringify(aiResult)
+        JSON.stringify(aiResult),
+        clientIp
       ]
     );
 

@@ -32,7 +32,9 @@ CREATE TABLE IF NOT EXISTS styles (
   request_text TEXT NOT NULL,
   language VARCHAR(5) NOT NULL,
   result JSONB NOT NULL,
+  ip_address TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_styles_user_created ON styles (user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_styles_ip_created ON styles (ip_address, created_at);
