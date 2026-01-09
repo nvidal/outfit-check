@@ -88,14 +88,14 @@ export const RecommendPage = () => {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col p-6 pb-24 min-h-0">
-        <header className="relative mb-6 text-center shrink-0 flex items-center justify-between z-20">
+      <div className={`flex-1 flex flex-col ${step === 'result' ? 'overflow-y-auto' : 'min-h-0'} p-6 pb-24`}>
+        <header className="relative mb-6 text-center shrink-0 flex items-center justify-between z-20 max-w-lg mx-auto w-full">
           <div className="w-10" />
           <Logo size="md" />
           <SettingsMenu />
         </header>
 
-        <main className="flex flex-1 flex-col gap-4 max-w-lg mx-auto w-full min-h-0">
+        <main className={`flex flex-col gap-4 max-w-lg mx-auto w-full ${step !== 'result' ? 'flex-1 min-h-0' : ''}`}>
           
           {step === 'capture' && (
             <>
@@ -152,7 +152,7 @@ export const RecommendPage = () => {
           )}
 
           {step === 'result' && result && (
-            <div className="flex-1 overflow-y-auto animate-in slide-in-from-bottom duration-500 pb-4">
+            <div className="animate-in slide-in-from-bottom duration-500 pb-4">
                {/* Result Header */}
                <div className="text-center mb-6">
                  <h2 className="text-3xl font-black tracking-tight text-white mb-2">{result.outfit_name}</h2>
@@ -244,6 +244,7 @@ export const RecommendPage = () => {
                </button>
             </div>
           )}
+
 
           {error && (
             <p className="text-center text-xs font-bold text-rose-300 animate-pulse mt-4">{error}</p>
