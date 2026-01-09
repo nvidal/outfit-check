@@ -6,7 +6,8 @@ const resources = {
   en: {
     translation: {
       "app_title": "Outfit Check",
-      "upload_btn": "Take a picture of yourself,\ntell us the occasion\nand we'll Style You!",
+      "upload_btn": "Take a picture of your outfit,\nselect the occasion\nand we'll check it!",
+      "style_upload_btn": "Take a picture of yourself,\ntell us the occasion\nand we'll Style You!",
       "take_photo": "Take Photo",
       "choose_gallery": "Choose from Gallery",
       "analyzing": "Consulting the fashion gods...",
@@ -40,7 +41,7 @@ const resources = {
       "nav_style": "Style",
       "nav_closet": "My Outfits",
       "style_me_title": "Style Me",
-      "style_me_subtitle": "Upload a photo so we can see your vibe.",
+      "style_me_subtitle": "Let our stylists dress you!",
       "occasion_question": "Where are you going?",
       "occasion_placeholder": "E.g. Summer wedding in Italy, avoid black...",
       "style_button": "Style Me",
@@ -74,7 +75,8 @@ const resources = {
   es: {
     translation: {
       "app_title": "Outfit Check",
-      "upload_btn": "Toma una foto de tu estilo,\ncuéntanos la ocasión\ny te vestiremos!",
+      "upload_btn": "Toma una foto de tu outfit,\nselecciona la ocasión\ny lo chequeamos!",
+      "style_upload_btn": "Toma una foto de tu estilo,\ncuéntanos la ocasión\ny te vestiremos!",
       "take_photo": "Take Photo",
       "choose_gallery": "Elegir de Galería",
       "analyzing": "Invocando a los dioses de la moda...",
@@ -108,7 +110,7 @@ const resources = {
       "nav_style": "Vestime",
       "nav_closet": "Mis Outfits",
       "style_me_title": "Vestime",
-      "style_me_subtitle": "Sube una foto para ver tu estilo.",
+      "style_me_subtitle": "¡Deja que nuestros estilistas te vistan!",
       "occasion_question": "¿A dónde vas?",
       "occasion_placeholder": "Ej. Boda de verano, evitar negro...",
       "style_button": "Vestime",

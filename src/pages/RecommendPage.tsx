@@ -100,11 +100,14 @@ export const RecommendPage = () => {
           {step === 'capture' && (
             <>
               <div className="text-center mb-2">
-                <h2 className="text-2xl font-black uppercase tracking-tight">{t('style_me_title')}</h2>
                 <p className="text-white/60 text-sm">{t('style_me_subtitle')}</p>
               </div>
               <div className="relative w-full flex-1 min-h-0 mx-auto">
-                <CameraCapture onCapture={handleCapture} onError={handleCaptureError} />
+                <CameraCapture 
+                  onCapture={handleCapture} 
+                  onError={handleCaptureError} 
+                  uploadText={t('style_upload_btn')}
+                />
               </div>
             </>
           )}
