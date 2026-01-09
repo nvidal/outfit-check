@@ -92,9 +92,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
           width: '900px', 
           height: '1200px',
           borderRadius: '40px',
-          borderColor: white20, 
-          borderWidth: '4px', 
-          borderStyle: 'solid',
+          boxShadow: '0 40px 80px -20px rgba(0, 0, 0, 0.6)',
           backgroundColor: '#000',
           overflow: 'hidden',
           marginBottom: '50px',
@@ -180,7 +178,8 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
                 
                 <text 
                   x="70" 
-                  y="46" 
+                  y="38" 
+                  dominantBaseline="middle"
                   fontFamily={font} 
                   fontWeight="700" 
                   fontSize="28" 
@@ -209,7 +208,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(({ image, sc
             >
                {items.slice(0, 5).map((item, i) => (
                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '24px' }}>
-                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: amber300, marginTop: '12px', flexShrink: 0 }} />
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: amber300, marginTop: '15px', flexShrink: 0 }} />
                     <span style={{ fontFamily: font, fontSize: '36px', fontWeight: '500', lineHeight: '1.2', color: white }}>{item}</span>
                  </div>
                ))}

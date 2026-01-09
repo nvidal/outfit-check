@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { OutfitImage } from '../components/OutfitImage';
 import { ShareCard } from '../components/ShareCard';
 import { shareOutfit } from '../lib/share';
-import type { HistoryItem, Mode } from '../types';
+import type { HistoryItem, Mode, ScanHistoryItem } from '../types';
 
 export const SharePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,9 +16,12 @@ export const SharePage: React.FC = () => {
   const [data, setData] = useState<HistoryItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Scan specific state
   const [selectedPersona, setSelectedPersona] = useState<Mode>('editor');
   const [personaDropdownOpen, setPersonaDropdownOpen] = useState(false);
   const [activeHighlight, setActiveHighlight] = useState<number | null>(null);
+  
   const [isSharing, setIsSharing] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
 
@@ -55,11 +58,11 @@ export const SharePage: React.FC = () => {
     );
   }
 
-  if (error || !data || data.type !== 'scan') {
+  if (error || !data) {
     return (
       <div className="flex h-dvh flex-col bg-[#0a428d] text-white p-6 font-sans items-center justify-center text-center gap-4">
         <Logo size="lg" />
-        <p className="text-white/60">{error || 'Something went wrong or content type not supported.'}</p>
+        <p className="text-white/60">{error || 'Something went wrong.'}</p>
         <button 
           onClick={() => navigate('/')}
           className="bg-white text-[#0a428d] px-6 py-3 rounded-xl font-bold uppercase tracking-wide"
@@ -70,25 +73,112 @@ export const SharePage: React.FC = () => {
     );
   }
 
-  // At this point data is ScanHistoryItem due to check above
+  const handleShare = async () => {
+    if (!shareCardRef.current) return;
+
+    if (data.type === 'scan') {
+        const result = (data as ScanHistoryItem).data.find(r => r.persona === selectedPersona);
+        if (!result) return;
+        await shareOutfit({
+            element: shareCardRef.current,
+            t,
+            score: result.score,
+            scanId: id,
+            onLoading: setIsSharing
+        });
+    } else {
+        await shareOutfit({
+            element: shareCardRef.current,
+            t,
+            mode: 'style',
+            scanId: id,
+            onLoading: setIsSharing
+        });
+    }
+  };
+
+  // --- STYLE RENDER ---
+  if (data.type === 'style') {
+      const styleData = data.data;
+      const imageUrl = data.generated_image_url || data.image_url;
+
+      return (
+        <div className="flex h-dvh flex-col bg-[#0a428d] text-white p-6 font-sans overflow-y-auto">
+          {isSharing && (
+            <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+              <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
+              <p className="text-xl font-black uppercase tracking-widest">{t('generating_share', 'Preparing Outfit...')}</p>
+            </div>
+          )}
+
+          <ShareCard 
+            ref={shareCardRef}
+            mode="style"
+            image={imageUrl}
+            items={styleData.items}
+            title={t('style_button')}
+          />
+
+          <header className="relative mb-6 text-center shrink-0 flex items-center justify-between z-50">
+            <div className="w-10" /> {/* Spacer */}
+            <Logo size="md" />
+            <button 
+              onClick={handleShare}
+              className="p-2.5 bg-white/10 rounded-full hover:bg-white/20 transition active:scale-95"
+              title={t('share', 'Share')}
+            >
+              <Share2 size={20} />
+            </button>
+          </header>
+
+          <main className="flex flex-1 flex-col gap-6 max-w-lg mx-auto w-full pb-8">
+            <div className="rounded-2xl overflow-hidden shadow-xl border border-white/10 relative group">
+                <img src={imageUrl} className="w-full h-auto object-cover max-h-[60vh]" alt="Generated Outfit" />
+            </div>
+
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="flex items-center gap-2 text-amber-300">
+                <Sparkles size={20} />
+                <span className="text-xs font-black uppercase tracking-[0.2em]">{t('style_button')}</span>
+              </div>
+
+              <h2 className="text-3xl font-black tracking-tight text-white">{styleData.outfit_name}</h2>
+              
+              <div className="bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl">
+                <p className="text-xl leading-relaxed text-white italic font-medium">"{styleData.reasoning}"</p>
+              </div>
+
+              <div className="grid gap-2 mt-2">
+                {styleData.items.map((item, i) => (
+                  <div 
+                    key={i} 
+                    className="flex items-center gap-3 rounded-xl p-3 border border-white/10 bg-white/5"
+                  >
+                    <div className="h-2 w-2 shrink-0 rounded-full bg-amber-300" />
+                    <span className="text-sm font-bold text-white">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button 
+              onClick={() => navigate('/')}
+              className="w-full mt-4 rounded-2xl bg-white py-4 text-xl font-black uppercase tracking-widest text-[#0a428d] shadow-2xl transition hover:scale-[1.02] active:scale-95"
+            >
+              {t('landing_cta_primary', 'Check your outfit now!')}
+            </button>
+          </main>
+        </div>
+      );
+  }
+
+  // --- SCAN RENDER (Existing Logic) ---
   const result = data.data.find(r => r.persona === selectedPersona) || data.data[0];
 
   const handlePersonaSelect = (persona: Mode) => {
     setSelectedPersona(persona);
     setActiveHighlight(null);
     setPersonaDropdownOpen(false);
-  };
-
-  const handleShare = async () => {
-    if (!shareCardRef.current || !result) return;
-
-    await shareOutfit({
-      element: shareCardRef.current,
-      t,
-      score: result.score,
-      scanId: id,
-      onLoading: setIsSharing
-    });
   };
 
   return (
