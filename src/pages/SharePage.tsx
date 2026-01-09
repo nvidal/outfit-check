@@ -2,12 +2,11 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Logo } from '../components/Logo';
-import { Sparkles, ScanEye, Flame, Flower2, ChevronsDown, Share2, Check, X } from 'lucide-react';
+import { Sparkles, ScanEye, Flame, Flower2, ChevronsDown, Check, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { OutfitImage } from '../components/OutfitImage';
 import { ShareCard } from '../components/ShareCard';
-import { shareOutfit } from '../lib/share';
-import type { HistoryItem, Mode, ScanHistoryItem } from '../types';
+import type { HistoryItem, Mode, StyleHistoryItem, ScanHistoryItem } from '../types';
 
 export const SharePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,7 +21,6 @@ export const SharePage: React.FC = () => {
   const [personaDropdownOpen, setPersonaDropdownOpen] = useState(false);
   const [activeHighlight, setActiveHighlight] = useState<number | null>(null);
   
-  const [isSharing, setIsSharing] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,7 +31,6 @@ export const SharePage: React.FC = () => {
         setData(scanData);
         
         if (scanData.type === 'scan') {
-          // Auto-select the best persona initially
           const best = scanData.data.reduce((prev, current) => 
             (prev.score > current.score) ? prev : current
           , scanData.data[0]);
@@ -73,44 +70,14 @@ export const SharePage: React.FC = () => {
     );
   }
 
-  const handleShare = async () => {
-    if (!shareCardRef.current) return;
-
-    if (data.type === 'scan') {
-        const result = (data as ScanHistoryItem).data.find(r => r.persona === selectedPersona);
-        if (!result) return;
-        await shareOutfit({
-            element: shareCardRef.current,
-            t,
-            score: result.score,
-            scanId: id,
-            onLoading: setIsSharing
-        });
-    } else {
-        await shareOutfit({
-            element: shareCardRef.current,
-            t,
-            mode: 'style',
-            scanId: id,
-            onLoading: setIsSharing
-        });
-    }
-  };
-
   // --- STYLE RENDER ---
   if (data.type === 'style') {
-      const result = data.data;
-      const imageUrl = data.generated_image_url || data.image_url;
+      const styleItem = data as StyleHistoryItem;
+      const result = styleItem.data;
+      const imageUrl = styleItem.generated_image_url || styleItem.image_url;
 
       return (
         <div className="flex h-dvh flex-col bg-[#0a428d] text-white font-sans overflow-hidden">
-          {isSharing && (
-            <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 p-6">
-              <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
-              <p className="text-xl font-black uppercase tracking-widest text-center">{t('generating_share', 'Preparing Outfit...')}</p>
-            </div>
-          )}
-
           <ShareCard 
             ref={shareCardRef}
             mode="style"
@@ -126,16 +93,13 @@ export const SharePage: React.FC = () => {
 
             <main className="flex flex-col gap-4 max-w-lg mx-auto w-full">
               <div className="animate-in slide-in-from-bottom duration-500 pb-4">
-                {/* Result Header */}
                 <div className="text-center mb-6">
                   <h2 className="text-3xl font-black tracking-tight text-white mb-2">{result.outfit_name}</h2>
                   <p className="text-sm text-white/80 italic">"{result.reasoning}"</p>
                 </div>
 
-                {/* Visual Prompt / Image Placeholder */}
-                <div className="rounded-2xl overflow-hidden mb-6 shadow-xl border border-white/10 relative animate-in fade-in duration-700 group">
+                <div className="rounded-2xl overflow-hidden mb-6 shadow-xl border border-white/10 relative animate-in fade-in duration-700">
                     <img src={imageUrl} className="w-full h-auto object-cover" alt="Generated Outfit" />
-                    
                     <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-5 pt-20">
                       <h3 className="text-xs font-black uppercase tracking-widest text-amber-300 mb-2 drop-shadow-md">{t('the_look')}</h3>
                       <ul className="space-y-1.5">
@@ -149,7 +113,6 @@ export const SharePage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Dos and Donts */}
                 {((result.dos?.length ?? 0) > 0 || (result.donts?.length ?? 0) > 0) && (
                   <div className="grid grid-cols-2 gap-3 mb-6">
                       {result.dos && result.dos.length > 0 && (
@@ -159,9 +122,7 @@ export const SharePage: React.FC = () => {
                           </h3>
                           <ul className="space-y-2">
                             {result.dos.map((item, i) => (
-                              <li key={i} className="text-xs text-emerald-100/90 leading-tight">
-                                • {item}
-                              </li>
+                              <li key={i} className="text-xs text-emerald-100/90 leading-tight">• {item}</li>
                             ))}
                           </ul>
                         </div>
@@ -173,9 +134,7 @@ export const SharePage: React.FC = () => {
                           </h3>
                           <ul className="space-y-2">
                             {result.donts.map((item, i) => (
-                              <li key={i} className="text-xs text-rose-100/90 leading-tight">
-                                • {item}
-                              </li>
+                              <li key={i} className="text-xs text-rose-100/90 leading-tight">• {item}</li>
                             ))}
                           </ul>
                         </div>
@@ -196,8 +155,9 @@ export const SharePage: React.FC = () => {
       );
   }
 
-  // --- SCAN RENDER (Existing Logic) ---
-  const result = data.data.find(r => r.persona === selectedPersona) || data.data[0];
+  // --- SCAN RENDER ---
+  const scanItem = data as ScanHistoryItem;
+  const result = scanItem.data.find(r => r.persona === selectedPersona) || scanItem.data[0];
 
   const handlePersonaSelect = (persona: Mode) => {
     setSelectedPersona(persona);
@@ -207,36 +167,36 @@ export const SharePage: React.FC = () => {
 
   return (
     <div className="flex h-dvh flex-col bg-[#0a428d] text-white p-6 font-sans overflow-y-auto">
-      {(isSharing) && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 p-6">
-          <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
-          <p className="text-xl font-black uppercase tracking-widest text-center">
-            {t('generating_share', 'Preparing Outfit...')}
-          </p>
-        </div>
-      )}
-
       <ShareCard 
         ref={shareCardRef}
-        image={data.image_url}
+        image={scanItem.image_url}
         score={result.score}
         highlights={result.highlights}
       />
 
-      <header className="relative mb-6 text-center shrink-0 flex items-center justify-between z-50 max-w-lg mx-auto w-full">
-        <div className="relative">
+      <header className="relative mb-8 flex flex-col items-center gap-4 z-50 max-w-lg mx-auto w-full">
+        <Logo size="md" />
+
+        <div className="relative flex flex-col items-center gap-1.5">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">{t('persona_label')}</span>
           <button
             onClick={() => setPersonaDropdownOpen(!personaDropdownOpen)}
-            className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition flex items-center gap-1"
+            className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-black uppercase tracking-wide text-white shadow-sm transition hover:bg-white/10"
           >
-            {selectedPersona === 'editor' && <ScanEye size={20} className="text-amber-300" />}
-            {selectedPersona === 'hypebeast' && <Flame size={20} className="text-amber-300" />}
-            {selectedPersona === 'boho' && <Flower2 size={20} className="text-amber-300" />}
-            <ChevronsDown size={14} className="opacity-50 text-white" />
+            <span className="flex items-center gap-2.5">
+              {selectedPersona === 'editor' && <ScanEye size={18} className="text-amber-300" />}
+              {selectedPersona === 'hypebeast' && <Flame size={18} className="text-amber-300" />}
+              {selectedPersona === 'boho' && <Flower2 size={18} className="text-amber-300" />}
+              <span className="text-xs font-black uppercase tracking-[0.2em]">
+                {t(`mode_${selectedPersona}`)}
+              </span>
+            </span>
+            <Check size={16} className="opacity-0 w-0" /> {/* Hidden Check to maintain spacing logic if needed, actually just keep icon only */}
+            <ChevronsDown size={16} className="opacity-50" />
           </button>
 
           {personaDropdownOpen && (
-            <div className="absolute left-0 mt-2 w-48 bg-[#0a428d] border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-[60] backdrop-blur-md">
+            <div className="absolute top-full mt-2 w-56 bg-[#0a428d] border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-[60] backdrop-blur-md">
               {(['editor', 'hypebeast', 'boho'] as Mode[]).map((persona) => {
                 const Icon = persona === 'editor' ? ScanEye : persona === 'hypebeast' ? Flame : Flower2;
                 return (
@@ -253,21 +213,11 @@ export const SharePage: React.FC = () => {
             </div>
           )}
         </div>
-
-        <Logo size="md" />
-
-        <button 
-          onClick={handleShare}
-          className="p-2.5 bg-white/10 rounded-full hover:bg-white/20 transition active:scale-95"
-          title={t('share', 'Share')}
-        >
-          <Share2 size={20} />
-        </button>
       </header>
 
       <main className="flex flex-1 flex-col gap-6 max-w-lg mx-auto w-full pb-8">
         <OutfitImage 
-          image={data.image_url} 
+          image={scanItem.image_url} 
           highlights={result.highlights}
           activeHighlight={activeHighlight}
           score={result.score}
