@@ -222,12 +222,15 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
   const prompt = `
 **Role:** Expert Personal Stylist.
 **Task:** 
-1. Analyze the user's photo (physique, skin tone, gender).
-2. Recommend a COMPLETE outfit based on their request: "${userRequest}".
-3. Explain WHY it works for them.
-4. **GENERATE A PHOTOREALISTIC IMAGE** of the user wearing this EXACT recommended outfit.
-   - **SAFETY OVERRIDE:** The image MUST be Safe For Work. If the original photo has skin exposure or poses that might trigger safety filters, **MODIFY them** to be neutral and fully clothed (fashion catalog style).
-   - **Identity Fallback:** If preserving the exact face triggers a block, generate a generic model with similar physical attributes instead. **Prioritize generating the OUTFIT image above all else.**
+1. **Analyze User:** Identify the user's key physical traits from the photo:
+   - Hair (Style, Color, Texture)
+   - Skin Tone
+   - Body Type / Build
+   - Gender / Approx Age
+2. **Select Outfit:** Recommend a COMPLETE outfit based on the request: "${userRequest}".
+3. **Generate Image:** Generate a photorealistic fashion image of a person **who matches the user's physical traits exactly** wearing this recommended outfit.
+   - **Likeness:** The person in the generated image MUST have the same hair, skin tone, and body build as the user in the photo.
+   - **Safety Override:** The image MUST be Safe For Work. Use a standard, neutral fashion pose. If the original photo has risky elements (exposure, ambiguous pose), **ignore them** and use a professional fashion catalog style.
 
 **Output Language:** ${language} (Ensure all values are in ${language}).
 
