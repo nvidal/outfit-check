@@ -226,15 +226,12 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
   const prompt = `
 **Role:** Expert Personal Stylist.
 **Task:** 
-1. **Analyze User:** Identify the user's key physical traits from the photo:
-   - Hair (Style, Color, Texture)
-   - Skin Tone
-   - Body Type / Build
-   - Gender / Approx Age
+1. **Analyze User:** Identify the user's key physical traits from the photo (Hair, Skin, Build, Gender/Age).
 2. **Select Outfit:** Recommend a COMPLETE outfit based on the request: "${userRequest}".
-3. **Generate Image:** Generate a photorealistic fashion image of a person **who matches the user's physical traits exactly** wearing this recommended outfit.
-   - **Likeness:** The person in the generated image MUST have the same hair, skin tone, and body build as the user in the photo.
-   - **Safety Override:** The image MUST be Safe For Work. Use a standard, neutral fashion pose. If the original photo has risky elements (exposure, ambiguous pose), **ignore them** and use a professional fashion catalog style.
+3. **Generate Image:** Generate a photorealistic fashion image of **THIS USER** wearing the **NEW RECOMMENDED OUTFIT**.
+   - **CRITICAL:** You MUST change the user's clothes. Do NOT output the original outfit.
+   - **Likeness:** Maintain the user's face, hair, and body type exactly.
+   - **Safety:** Ensure SFW. If original is risky, fix it in the generation.
 
 **Context:**
 - Target Language: ${language.toUpperCase()} (STRICT: All output text MUST be in this language).
@@ -250,13 +247,13 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
 You must provide the text response in **JSON** format, followed by the generated image.
 JSON Structure:
 {
-  "user_analysis": "Max 10 words description of user features.",
+  "user_analysis": "Max 10 words.",
   "outfit_name": "Short, catchy name",
   "items": ["Item 1", "Item 2", "Item 3"],
-  "reasoning": "Max 1 sentence explaining the choice.",
+  "reasoning": "Max 1 sentence.",
   "dos": ["Do 1", "Do 2"],
   "donts": ["Don't 1", "Don't 2"],
-  "visual_prompt": "Hyper-detailed photorealistic prompt in ENGLISH. Describe the person's physical traits and the outfit in English to ensure accurate image generation."
+  "visual_prompt": "Description of the generated image."
 }
 `;
 
@@ -268,17 +265,19 @@ JSON Structure:
   };
 
   try {
-    // ... inside recommendOutfit ...
-    const generate = async (currentPrompt: string) => {
-      const config = {
-        model,
-        contents: [currentPrompt, imagePart],
-      };
-      return await ai.models.generateContent(config) as unknown as GenerateContentResponse;
+    const config = {
+      model,
+      contents: [prompt, imagePart],
+      config: { 
+          // @ts-ignore - responseModalities is a valid beta feature not yet in strict types
+          responseModalities: ["TEXT", "IMAGE"],
+          // We remove responseMimeType: "application/json" to avoid conflicting with Image output in some versions
+          // We will parse the JSON manually from the text block.
+      }
     };
 
-    let result = await generate(prompt);
-    let candidate = result.candidates?.[0];
+    const result = await ai.models.generateContent(config) as unknown as GenerateContentResponse;
+    const candidate = result.candidates?.[0];
 
     // Helper to extract parts
     const extractParts = (cand: Candidate | undefined) => {
@@ -297,53 +296,29 @@ JSON Structure:
        return { text, img, mime };
     };
 
-    let { text: responseText, img: generatedImageBase64, mime: generatedImageMimeType } = extractParts(candidate);
+    const { text: responseText, img: generatedImageBase64, mime: generatedImageMimeType } = extractParts(candidate);
 
-    // Parse JSON helper to reuse
-    const parseJSON = (txt: string) => {
-      try {
-        const jsonString = txt.replace(/```json/g, "").replace(/```/g, "").trim();
-        return JSON.parse(jsonString);
-      } catch {
-        const match = txt.match(/\{[\s\S]*\}/);
-        return match ? JSON.parse(match[0]) : null;
-      }
-    };
+    if (!responseText) throw new Error("No text response received");
 
-    let parsed = parseJSON(responseText);
-
-    // RETRY LOGIC: If image is missing, try again
-    if (!generatedImageBase64) {
-       console.warn("First attempt missing image, retrying with focused prompt...");
-       
-       let retryPrompt = "";
-       if (parsed?.visual_prompt) {
-          // If we have the description, ask ONLY for the image to avoid "laziness"
-          retryPrompt = `**TASK:** Generate the image described below. DO NOT return any text, ONLY the generated image file.
-          
-**IMAGE DESCRIPTION:** ${parsed.visual_prompt}`;
-       } else {
-          retryPrompt = `**CRITICAL:** Generate BOTH the JSON analysis AND the outfit image.\n${prompt}`;
-       }
-
-       result = await generate(retryPrompt);
-       candidate = result.candidates?.[0];
-       const retryParts = extractParts(candidate);
-       
-       generatedImageBase64 = retryParts.img;
-       generatedImageMimeType = retryParts.mime;
-       
-       // If retry produced JSON but the first one didn't, update it
-       if (!parsed && retryParts.text) {
-          parsed = parseJSON(retryParts.text);
-       }
+    // Parse JSON manually since we removed the forced mode
+    const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+    let parsed;
+    try {
+        parsed = JSON.parse(jsonString);
+    } catch {
+        const match = responseText.match(/\{[\s\S]*\}/);
+        if (match) {
+            parsed = JSON.parse(match[0]);
+        } else {
+            throw new Error("Failed to parse JSON response");
+        }
     }
-
-    if (!parsed) throw new Error("Failed to parse JSON response");
 
     // Attach Generated Image
     if (generatedImageBase64 && generatedImageMimeType) {
       parsed.image = `data:${generatedImageMimeType};base64,${generatedImageBase64}`;
+    } else {
+      console.warn("No image generated despite responseModalities config.");
     }
 
     return parsed;
