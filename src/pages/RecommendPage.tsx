@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import axios from 'axios';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -7,8 +7,10 @@ import { CameraCapture } from '../components/CameraCapture';
 import { Logo } from '../components/Logo';
 import { BottomNav } from '../components/BottomNav';
 import { SettingsMenu } from '../components/SettingsMenu';
+import { ShareCard } from '../components/ShareCard';
 import { OutfitImage } from '../components/OutfitImage';
-import { Sparkles, Shirt, Check, X, Download } from 'lucide-react';
+import { Sparkles, Shirt, Check, X, Download, Share2 } from 'lucide-react';
+import { shareOutfit } from '../lib/share';
 
 interface RecommendationResult {
   user_analysis: string;
@@ -26,6 +28,7 @@ export const RecommendPage = () => {
   const { session } = useAuth();
   const location = useLocation();
   const locationState = location.state as { image?: string; result?: RecommendationResult } | null;
+  const shareCardRef = useRef<HTMLDivElement>(null);
 
   const [image, setImage] = useState<string | null>(locationState?.image || null);
   const [userRequest, setUserRequest] = useState('');
@@ -33,6 +36,7 @@ export const RecommendPage = () => {
     locationState?.result ? 'result' : (locationState?.image ? 'details' : 'capture')
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [result, setResult] = useState<RecommendationResult | null>(locationState?.result || null);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,20 +92,54 @@ export const RecommendPage = () => {
     document.body.removeChild(link);
   };
 
+  const handleShare = async () => {
+    if (!shareCardRef.current || !result) return;
+
+    await shareOutfit({
+      element: shareCardRef.current,
+      t,
+      mode: 'style',
+      language: i18n.language,
+      onLoading: setIsSharing
+    });
+  };
+
   return (
     <div className="flex h-dvh flex-col bg-[#0a428d] text-white font-sans overflow-hidden">
-      {isLoading && (
+      {(isLoading || isSharing) && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 p-6">
           <Sparkles className="h-12 w-12 animate-spin text-white mb-4" />
-          <p className="text-xl font-black uppercase tracking-widest text-center">{t('analyzing')}</p>
+          <p className="text-xl font-black uppercase tracking-widest text-center">
+            {isLoading ? t('analyzing') : t('generating_share', 'Preparing Outfit...')}
+          </p>
         </div>
+      )}
+
+      {result && (result.image || image) && (
+        <ShareCard 
+          ref={shareCardRef}
+          mode="style"
+          image={result.image || image || ''}
+          title={result.outfit_name}
+          items={result.items}
+        />
       )}
 
       <div className={`flex-1 flex flex-col ${step === 'result' ? 'overflow-y-auto' : 'min-h-0'} p-6 pb-24`}>
         <header className="relative mb-6 text-center shrink-0 flex items-center justify-between z-20 max-w-lg mx-auto w-full">
           <div className="w-10" />
           <Logo size="md" />
-          <SettingsMenu />
+          {step === 'result' ? (
+            <button
+              onClick={handleShare}
+              className="p-2.5 bg-white/10 rounded-full hover:bg-white/20 transition active:scale-95"
+              title={t('share', 'Share')}
+            >
+              <Share2 size={20} />
+            </button>
+          ) : (
+            <SettingsMenu />
+          )}
         </header>
 
         <main className={`flex flex-col gap-4 max-w-lg mx-auto w-full ${step !== 'result' ? 'flex-1 min-h-0' : ''}`}>
