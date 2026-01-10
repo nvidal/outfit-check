@@ -223,7 +223,7 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
 
   // STEP 1: Text Analysis (High Quality Text Model)
   const textModel = "gemini-3-flash-preview";
-  
+
   const textPrompt = `
 **Role:** Expert Personal Stylist.
 **Task:** 

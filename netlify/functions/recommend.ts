@@ -73,34 +73,10 @@ export default async function handler(req: Request) {
   try {
     await dbClient.connect();
 
-    // Rate Limiting
-    const queryPromise = dbClient.query(
-      `SELECT COUNT(*) FROM styles 
-       WHERE (ip_address = $1 OR user_id = $2) 
-       AND created_at > NOW() - INTERVAL '24 hours'`,
-      [clientIp, userId]
-    );
-    // Timeout for query to avoid hanging
-    const queryTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Query Timeout")), 5000));
-    
-    const usageRes = await Promise.race([queryPromise, queryTimeout]) as { rows: { count: string }[] };
-    const count = parseInt(usageRes.rows[0].count);
-    const LIMIT = userId ? 50 : 3;
-
-    if (count >= LIMIT) {
-      return formatError(userId ? "limit_user" : "limit_guest", 429, lang);
-    }
-
-    // 1. Upload Input Image
+    // 1. Run AI Analysis & Generation
     const { mimeType, base64 } = parseImagePayload(image);
-    const buffer = Buffer.from(base64, "base64");
-    const folder = userId ? userId : 'guest';
-    const fileName = `${folder}/style-${Date.now()}-${randomUUID()}.${getExtension(mimeType)}`;
     
-    // Start Parallel Processes: Upload & AI
-    const uploadPromise = uploadImage(fileName, buffer, mimeType);
-    
-    const aiPromise = recommendOutfit({
+    const aiResult = await recommendOutfit({
       apiKey,
       imageBase64: base64,
       mimeType,
@@ -108,35 +84,37 @@ export default async function handler(req: Request) {
       userRequest: text,
     });
 
-    const [imageUrl, aiResult] = await Promise.all([uploadPromise, aiPromise]);
-
-    // 2. Upload Generated Image (if exists)
-    let generatedImageUrl: string | null = null;
+    // 2. Process Result & Persistence
+    // Only save if we have a generated image, as that's the core value of "Style Me" history
     if (aiResult.image && aiResult.image.startsWith('data:')) {
        try {
          const { mimeType: genMime, base64: genBase64 } = parseImagePayload(aiResult.image);
          const genBuffer = Buffer.from(genBase64, "base64");
-         const genFileName = `${folder}/generated-${Date.now()}-${randomUUID()}.${getExtension(genMime)}`;
-         generatedImageUrl = await uploadImage(genFileName, genBuffer, genMime);
+         const folder = userId ? userId : 'guest';
+         const genFileName = `${folder}/style-${Date.now()}-${randomUUID()}.${getExtension(genMime)}`;
+         
+         const publicUrl = await uploadImage(genFileName, genBuffer, genMime);
+         
+         // 3. Save to DB
+         // We use the generated image URL for both fields since we are skipping the input upload
+         await dbClient.query(
+          `INSERT INTO styles (user_id, image_url, generated_image_url, request_text, language, result, ip_address) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            userId,
+            publicUrl, // Use generated image as the main "image_url" for history display
+            publicUrl,
+            text,
+            lang,
+            JSON.stringify(aiResult),
+            clientIp
+          ]
+        );
        } catch (err) {
-         console.warn("Failed to upload generated image", err);
+         console.warn("Failed to upload/save style result", err);
+         // We still return the result to the user even if saving failed
        }
     }
-
-    // 3. Save to DB
-    await dbClient.query(
-      `INSERT INTO styles (user_id, image_url, generated_image_url, request_text, language, result, ip_address) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [
-        userId,
-        imageUrl,
-        generatedImageUrl,
-        text,
-        lang,
-        JSON.stringify(aiResult),
-        clientIp
-      ]
-    );
 
     return new Response(JSON.stringify(aiResult), {
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
