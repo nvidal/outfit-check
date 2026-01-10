@@ -119,6 +119,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onError
   const handleRetake = () => {
     setPreview(null);
     setRawImage(null);
+    onCapture('');
     fileInputRef.current?.click();
   };
 

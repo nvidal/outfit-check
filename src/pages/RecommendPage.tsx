@@ -9,7 +9,7 @@ import { BottomNav } from '../components/BottomNav';
 import { SettingsMenu } from '../components/SettingsMenu';
 import { ShareCard } from '../components/ShareCard';
 import { OutfitImage } from '../components/OutfitImage';
-import { Sparkles, Shirt, Check, X, Download, Share2 } from 'lucide-react';
+import { Sparkles, Shirt, Check, X, Download, Share2, ArrowRight } from 'lucide-react';
 import { shareOutfit } from '../lib/share';
 
 interface RecommendationResult {
@@ -41,12 +41,12 @@ export const RecommendPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const handleCapture = (base64: string) => {
-    setImage(base64);
-    setStep('details');
+    setImage(base64 || null);
     setError(null);
   };
 
   const handleCaptureError = (msg: string) => {
+    if (msg) setImage(null);
     setError(msg);
   };
 
@@ -156,6 +156,17 @@ export const RecommendPage = () => {
                   uploadText={t('style_upload_btn')}
                 />
               </div>
+
+              {image && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <button
+                    onClick={() => setStep('details')}
+                    className="w-full flex items-center justify-center gap-2 rounded-2xl bg-white py-4 text-xl font-black uppercase tracking-widest text-[#0a428d] shadow-2xl transition hover:scale-[1.02] active:scale-95"
+                  >
+                    {t('continue')} <ArrowRight size={20} />
+                  </button>
+                </div>
+              )}
             </>
           )}
 
