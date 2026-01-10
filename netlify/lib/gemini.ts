@@ -222,7 +222,7 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
       : 'Global';
 
   // STEP 1: Text Analysis (High Quality Text Model)
-  const textModel = "gemini-2.5-flash";
+  const textModel = "gemini-3-flash-preview";
   
   const textPrompt = `
 **Role:** Expert Personal Stylist.
@@ -262,6 +262,7 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
 
   try {
     // 1. Generate Text/JSON
+    const textStartTime = Date.now();
     const textConfig = {
       model: textModel,
       contents: [textPrompt, imagePart],
@@ -269,6 +270,8 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
     };
     
     const textResult = await ai.models.generateContent(textConfig) as unknown as GenerateContentResponse;
+    console.log(`[Style Me] Step 1 (Text) took: ${Date.now() - textStartTime}ms`);
+
     const textCandidate = textResult.candidates?.[0];
     let responseText = "";
     
@@ -287,6 +290,7 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
     const imageModel = "gemini-2.5-flash-image";
     
     if (parsed.visual_prompt) {
+       const imageStartTime = Date.now();
        const imagePrompt = `**TASK:** Generate a photorealistic fashion image using the attached image as a REFERENCE for the PERSON (Face, Body, Pose) ONLY.
 **CRITICAL:** IGNORE the outfit in the reference image. You MUST change the clothes to match the description below.
 
@@ -305,6 +309,8 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
          };
          
          const imageResult = await ai.models.generateContent(imageConfig) as unknown as GenerateContentResponse;
+         console.log(`[Style Me] Step 2 (Image) took: ${Date.now() - imageStartTime}ms`);
+
          const imageCandidate = imageResult.candidates?.[0];
          
          if (imageCandidate?.content?.parts) {
