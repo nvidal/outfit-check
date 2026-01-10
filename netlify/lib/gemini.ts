@@ -219,6 +219,10 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
   // Use 'gemini-2.5-flash-image' for single-request multimodal generation (Text + Image)
   const model = "gemini-2.5-flash-image";
 
+  const regionLabel = language === 'es'
+      ? 'Uruguay/Argentina (use local slang like "che", "re", "copado")'
+      : 'Global';
+
   const prompt = `
 **Role:** Expert Personal Stylist.
 **Task:** 
@@ -232,7 +236,9 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
    - **Likeness:** The person in the generated image MUST have the same hair, skin tone, and body build as the user in the photo.
    - **Safety Override:** The image MUST be Safe For Work. Use a standard, neutral fashion pose. If the original photo has risky elements (exposure, ambiguous pose), **ignore them** and use a professional fashion catalog style.
 
-**Output Language:** ${language} (Ensure all values are in ${language}).
+**Context:**
+- Target Language: ${language.toUpperCase()} (STRICT: All output text MUST be in this language).
+- Region: ${regionLabel}
 
 **Constraints:**
 - **VERY CONCISE**.
@@ -250,7 +256,7 @@ JSON Structure:
   "reasoning": "Max 1 sentence explaining the choice.",
   "dos": ["Do 1", "Do 2"],
   "donts": ["Don't 1", "Don't 2"],
-  "visual_prompt": "Hyper-detailed photorealistic prompt. You MUST describe the person's EXACT hair (texture/length/color), skin tone, and build from the photo to ensure a lookalike. Example: 'A photorealistic shot of a person with wavy chestnut hair, olive skin, and athletic build wearing...'"
+  "visual_prompt": "Hyper-detailed photorealistic prompt in ENGLISH. Describe the person's physical traits and the outfit in English to ensure accurate image generation."
 }
 `;
 
@@ -339,9 +345,6 @@ JSON Structure:
     if (generatedImageBase64 && generatedImageMimeType) {
       parsed.image = `data:${generatedImageMimeType};base64,${generatedImageBase64}`;
     }
-
-    return parsed;
-
 
     return parsed;
 

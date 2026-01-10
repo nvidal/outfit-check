@@ -8,7 +8,7 @@ import { Logo } from '../components/Logo';
 import { BottomNav } from '../components/BottomNav';
 import { SettingsMenu } from '../components/SettingsMenu';
 import { OutfitImage } from '../components/OutfitImage';
-import { Sparkles, Shirt, RotateCcw, Check, X, Download } from 'lucide-react';
+import { Sparkles, Shirt, Check, X, Download } from 'lucide-react';
 
 interface RecommendationResult {
   user_analysis: string;
@@ -248,8 +248,7 @@ export const RecommendPage = () => {
                  onClick={handleReset}
                  className="w-full flex items-center justify-center gap-2 rounded-2xl bg-white/10 border border-white/20 py-4 text-sm font-black uppercase tracking-widest text-white hover:bg-white/20 transition active:scale-95"
                >
-                 <RotateCcw size={16} />
-                 {t('style_another')}
+                 ← {t('style_another')}
                </button>
             </div>
           )}
