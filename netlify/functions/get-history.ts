@@ -1,17 +1,6 @@
 import { Client } from "@neondatabase/serverless";
 import { createClient } from "@supabase/supabase-js";
 
-interface DBRow {
-  id: string;
-  type: 'scan' | 'style';
-  image_url: string;
-  created_at: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any; // ai_results or result JSON
-  occasion: string | null;
-  generated_image_url: string | null;
-}
-
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
@@ -83,38 +72,56 @@ export default async function handler(req: Request) {
 
   try {
     const result = await client.query(
-      `SELECT id, 'scan' as type, image_url, created_at, ai_results as data, occasion, NULL as generated_image_url
-       FROM scans 
-       WHERE user_id = $1
-       UNION ALL
-       SELECT id, 'style' as type, image_url, created_at, result as data, NULL as occasion, generated_image_url
-       FROM styles
-       WHERE user_id = $1
-       ORDER BY created_at DESC 
+        `WITH scan_history AS (
+         SELECT 
+           id,
+           'scan'::text AS type,
+           image_url,
+           created_at,
+           occasion::text AS occasion,
+           NULL::text AS generated_image_url,
+           COALESCE(
+             (
+                  SELECT jsonb_agg(
+                    jsonb_build_object(
+                   'persona', elem->>'persona',
+                   'score', (elem->>'score')::numeric,
+                   'title', elem->>'title'
+                 )
+               )
+                  FROM jsonb_array_elements(COALESCE(ai_results, '[]'::jsonb)) AS elem
+             ),
+                '[]'::jsonb
+           ) AS data
+         FROM scans
+         WHERE user_id = $1
+       ),
+       style_history AS (
+         SELECT 
+           id,
+           'style'::text AS type,
+           image_url,
+           created_at,
+           NULL::text AS occasion,
+           generated_image_url,
+            jsonb_build_object(
+             'outfit_name', result->>'outfit_name'
+           ) AS data
+         FROM styles
+         WHERE user_id = $1
+       ),
+       combined AS (
+         SELECT * FROM scan_history
+         UNION ALL
+         SELECT * FROM style_history
+       )
+       SELECT * FROM combined
+       ORDER BY created_at DESC
        LIMIT $2 OFFSET $3`,
       [userId, limit, offset]
     );
 
-    const rows = result.rows.map((row: DBRow) => {
-      // Simplify data payload for list view to reduce bandwidth
-      let simplifiedData = row.data;
-
-      if (row.type === 'scan' && Array.isArray(row.data)) {
-        simplifiedData = row.data.map((r: { persona: string; score: number; title: string }) => ({
-          persona: r.persona,
-          score: r.score,
-          title: r.title
-        }));
-      } else if (row.type === 'style' && row.data) {
-        simplifiedData = {
-          outfit_name: row.data.outfit_name
-        };
-      }
-
-      return { ...row, data: simplifiedData };
-    });
-
-    return new Response(JSON.stringify(rows), {
+    return new Response(JSON.stringify(result.rows), {
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   } catch (error) {

@@ -84,45 +84,46 @@ export default async function handler(req: Request) {
       userRequest: text,
     });
 
-    // 2. Process Result & Persistence
-    // Only save if we have a generated image, as that's the core value of "Style Me" history
-    if (aiResult.image && aiResult.image.startsWith('data:')) {
-       try {
-         const { mimeType: genMime, base64: genBase64 } = parseImagePayload(aiResult.image);
-         const genBuffer = Buffer.from(genBase64, "base64");
-         const folder = userId ? userId : 'guest';
-         const genFileName = `${folder}/style-${Date.now()}-${randomUUID()}.${getExtension(genMime)}`;
-         
-         const publicUrl = await uploadImage(genFileName, genBuffer, genMime);
-         
-         // 3. Save to DB
-         // We use the generated image URL for both fields since we are skipping the input upload
-         const dbRes = await dbClient.query(
-          `INSERT INTO styles (user_id, image_url, generated_image_url, request_text, language, result, ip_address) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
-           RETURNING id`,
-          [
-            userId,
-            publicUrl, // Use generated image as the main "image_url" for history display
-            publicUrl,
-            text,
-            lang,
-            JSON.stringify(aiResult),
-            clientIp
-          ]
-        );
-        const insertedId = dbRes.rows[0].id;
+      // 2. Process Result & Persistence
+      // Only save if we have a generated image, as that's the core value of "Style Me" history
+      if (aiResult.image && aiResult.image.startsWith('data:')) {
+         try {
+           const { mimeType: genMime, base64: genBase64 } = parseImagePayload(aiResult.image);
+           const genBuffer = Buffer.from(genBase64, "base64");
+           const folder = userId ? userId : 'guest';
+           const genFileName = `${folder}/style-${Date.now()}-${randomUUID()}.${getExtension(genMime)}`;
+           
+           const publicUrl = await uploadImage(genFileName, genBuffer, genMime);
+           const sanitizedResult = { ...aiResult, image: publicUrl };
+           
+           // 3. Save to DB
+           // We use the generated image URL for both fields since we are skipping the input upload
+           const dbRes = await dbClient.query(
+            `INSERT INTO styles (user_id, image_url, generated_image_url, request_text, language, result, ip_address) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             RETURNING id`,
+            [
+              userId,
+              publicUrl, // Use generated image as the main "image_url" for history display
+              publicUrl,
+              text,
+              lang,
+              JSON.stringify(sanitizedResult),
+              clientIp
+            ]
+          );
+          const insertedId = dbRes.rows[0].id;
 
-        return new Response(JSON.stringify({ ...aiResult, id: insertedId }), {
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-       } catch (err) {
-         console.warn("Failed to upload/save style result", err);
-         // We still return the result to the user even if saving failed
-       }
-    }
+          return new Response(JSON.stringify({ ...sanitizedResult, id: insertedId }), {
+            headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+          });
+         } catch (err) {
+           console.warn("Failed to upload/save style result", err);
+           // We still return the result to the user even if saving failed
+         }
+      }
 
-    return new Response(JSON.stringify(aiResult), {
+      return new Response(JSON.stringify(aiResult), {
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   } catch (error) {
