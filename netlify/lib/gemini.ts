@@ -216,22 +216,20 @@ interface GenerateContentResponse {
 
 export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language, userRequest }: RecommendOptions) => {
   const ai = new GoogleGenAI({ apiKey });
-  // Use 'gemini-2.5-flash-image' for single-request multimodal generation (Text + Image)
-  const model = "gemini-2.5-flash-image";
 
   const regionLabel = language === 'es'
       ? 'Uruguay/Argentina (use local slang like "che", "re", "copado")'
       : 'Global';
 
-  const prompt = `
+  // STEP 1: Text Analysis (High Quality Text Model)
+  const textModel = "gemini-2.5-flash";
+  
+  const textPrompt = `
 **Role:** Expert Personal Stylist.
 **Task:** 
-1. **Analyze User:** Identify the user's key physical traits from the photo (Hair, Skin, Build, Gender/Age).
-2. **Select Outfit:** Recommend a COMPLETE outfit based on the request: "${userRequest}".
-3. **Generate Image:** Generate a photorealistic fashion image of **THIS USER** wearing the **NEW RECOMMENDED OUTFIT**.
-   - **CRITICAL:** You MUST change the user's clothes. Do NOT output the original outfit.
-   - **Likeness:** Maintain the user's face, hair, and body type exactly.
-   - **Safety:** Ensure SFW. If original is risky, fix it in the generation.
+1. **Analyze User:** Identify key physical traits (Hair, Skin, Build, Gender/Age).
+2. **Select Outfit:** Recommend a COMPLETE outfit based on: "${userRequest}".
+3. **Describe Image:** Write a hyper-detailed English prompt for an image generator to visualize this look.
 
 **Context:**
 - Target Language: ${language.toUpperCase()} (STRICT: All output text MUST be in this language).
@@ -243,9 +241,7 @@ export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language,
 - **Bullet points** for items.
 - No fluff.
 
-**Response Format:**
-You must provide the text response in **JSON** format, followed by the generated image.
-JSON Structure:
+**Response Format (JSON Only):**
 {
   "user_analysis": "Max 10 words.",
   "outfit_name": "Short, catchy name",
@@ -253,7 +249,7 @@ JSON Structure:
   "reasoning": "Max 1 sentence.",
   "dos": ["Do 1", "Do 2"],
   "donts": ["Don't 1", "Don't 2"],
-  "visual_prompt": "Description of the generated image."
+  "visual_prompt": "Hyper-detailed photorealistic prompt in ENGLISH. Describe the person's physical traits (exact hair, skin, build) and the outfit in English. Ensure it describes a photorealistic fashion shot."
 }
 `;
 
@@ -265,60 +261,63 @@ JSON Structure:
   };
 
   try {
-    const config = {
-      model,
-      contents: [prompt, imagePart],
-      config: { 
-          // @ts-ignore - responseModalities is a valid beta feature not yet in strict types
-          responseModalities: ["TEXT", "IMAGE"],
-          // We remove responseMimeType: "application/json" to avoid conflicting with Image output in some versions
-          // We will parse the JSON manually from the text block.
+    // 1. Generate Text/JSON
+    const textConfig = {
+      model: textModel,
+      contents: [textPrompt, imagePart],
+      config: { responseMimeType: "application/json" }
+    };
+    
+    const textResult = await ai.models.generateContent(textConfig) as unknown as GenerateContentResponse;
+    const textCandidate = textResult.candidates?.[0];
+    let responseText = "";
+    
+    if (textCandidate?.content?.parts) {
+      for (const part of textCandidate.content.parts) {
+        if (part.text) responseText += part.text;
       }
-    };
-
-    const result = await ai.models.generateContent(config) as unknown as GenerateContentResponse;
-    const candidate = result.candidates?.[0];
-
-    // Helper to extract parts
-    const extractParts = (cand: Candidate | undefined) => {
-       let text = "";
-       let img = null;
-       let mime = null;
-       if (cand?.content?.parts) {
-         for (const part of cand.content.parts) {
-           if (part.text) text += part.text;
-           if (part.inlineData) {
-             img = part.inlineData.data;
-             mime = part.inlineData.mimeType;
-           }
-         }
-       }
-       return { text, img, mime };
-    };
-
-    const { text: responseText, img: generatedImageBase64, mime: generatedImageMimeType } = extractParts(candidate);
-
-    if (!responseText) throw new Error("No text response received");
-
-    // Parse JSON manually since we removed the forced mode
-    const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-    let parsed;
-    try {
-        parsed = JSON.parse(jsonString);
-    } catch {
-        const match = responseText.match(/\{[\s\S]*\}/);
-        if (match) {
-            parsed = JSON.parse(match[0]);
-        } else {
-            throw new Error("Failed to parse JSON response");
-        }
     }
 
-    // Attach Generated Image
-    if (generatedImageBase64 && generatedImageMimeType) {
-      parsed.image = `data:${generatedImageMimeType};base64,${generatedImageBase64}`;
-    } else {
-      console.warn("No image generated despite responseModalities config. Result:", JSON.stringify(result, null, 2));
+    if (!responseText) throw new Error("No text response from analysis step");
+
+    const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(jsonString);
+
+    // 2. Generate Image (Specialized Image Model)
+    const imageModel = "gemini-2.5-flash-image";
+    
+    if (parsed.visual_prompt) {
+       const imagePrompt = `**TASK:** Generate a photorealistic fashion image using the attached image as a REFERENCE for the PERSON (Face, Body, Pose) ONLY.
+**CRITICAL:** IGNORE the outfit in the reference image. You MUST change the clothes to match the description below.
+
+**NEW OUTFIT DESCRIPTION:** ${parsed.visual_prompt}
+
+**REQUIREMENTS:**
+- Photorealistic, 8k, cinematic lighting.
+- Safe For Work (SFW). If description implies nudity/risk, modify to be fully clothed and neutral.
+- Person: Match the face and body of the reference image.
+- Clothing: COMPLETELY REPLACE the original clothes with the new outfit described above.`;
+
+       try {
+         const imageConfig = {
+            model: imageModel,
+            contents: [imagePrompt, imagePart], // Pass original image for likeness reference
+         };
+         
+         const imageResult = await ai.models.generateContent(imageConfig) as unknown as GenerateContentResponse;
+         const imageCandidate = imageResult.candidates?.[0];
+         
+         if (imageCandidate?.content?.parts) {
+            for (const part of imageCandidate.content.parts) {
+               if (part.inlineData) {
+                  parsed.image = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                  break;
+               }
+            }
+         }
+       } catch (imgErr) {
+          console.warn("Image generation step failed:", imgErr);
+       }
     }
 
     return parsed;
