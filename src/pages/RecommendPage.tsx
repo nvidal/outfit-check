@@ -13,6 +13,7 @@ import { Sparkles, Shirt, Check, X, Download, Share2, ArrowRight } from 'lucide-
 import { shareOutfit } from '../lib/share';
 
 interface RecommendationResult {
+  id?: string;
   user_analysis: string;
   outfit_name: string;
   items: string[];
@@ -125,6 +126,7 @@ export const RecommendPage = () => {
       element: shareCardRef.current,
       t,
       mode: 'style',
+      scanId: result.id || locationState?.id,
       language: i18n.language,
       onLoading: setIsSharing
     });

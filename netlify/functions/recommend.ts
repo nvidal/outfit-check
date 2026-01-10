@@ -97,9 +97,10 @@ export default async function handler(req: Request) {
          
          // 3. Save to DB
          // We use the generated image URL for both fields since we are skipping the input upload
-         await dbClient.query(
+         const dbRes = await dbClient.query(
           `INSERT INTO styles (user_id, image_url, generated_image_url, request_text, language, result, ip_address) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           RETURNING id`,
           [
             userId,
             publicUrl, // Use generated image as the main "image_url" for history display
@@ -110,6 +111,11 @@ export default async function handler(req: Request) {
             clientIp
           ]
         );
+        const insertedId = dbRes.rows[0].id;
+
+        return new Response(JSON.stringify({ ...aiResult, id: insertedId }), {
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        });
        } catch (err) {
          console.warn("Failed to upload/save style result", err);
          // We still return the result to the user even if saving failed

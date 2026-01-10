@@ -63,7 +63,7 @@ export const HistoryPage: React.FC = () => {
   const generateAndShare = useCallback(async () => {
     if (!shareCardRef.current || !shareItem) return;
 
-    let fullItem: HistoryItem = shareItem;
+    const fullItem: HistoryItem = shareItem;
 
     // Check if we need to fetch full data (if simplified version is present)
     const isScanSimplified = shareItem.type === 'scan' && !shareItem.data[0].highlights;
@@ -74,7 +74,10 @@ export const HistoryPage: React.FC = () => {
         try {
             const headers = session ? { Authorization: `Bearer ${session.access_token}` } : {};
             const res = await axios.post('/.netlify/functions/get-scan', { id: shareItem.id }, { headers });
-            fullItem = res.data;
+            setShareItem(res.data);
+            // Return to allow re-render with full data. 
+            // The useEffect will trigger again with the new shareItem.
+            return;
         } catch (error) {
             console.error('Failed to fetch full scan details', error);
             setIsSharing(false);
@@ -82,27 +85,22 @@ export const HistoryPage: React.FC = () => {
         }
     }
 
+    let score: number | undefined;
     if (fullItem.type === 'scan') {
       const bestResult = fullItem.data.reduce((prev: PersonaAnalysisResult, current: PersonaAnalysisResult) => 
         (prev.score > current.score) ? prev : current
       , fullItem.data[0]);
-
-      await shareOutfit({
-        element: shareCardRef.current,
-        t,
-        score: bestResult.score,
-        scanId: fullItem.id,
-        onLoading: setIsSharing
-      });
-    } else {
-      await shareOutfit({
-        element: shareCardRef.current,
-        t,
-        mode: 'style',
-        scanId: fullItem.id,
-        onLoading: setIsSharing
-      });
+      score = bestResult.score;
     }
+
+    await shareOutfit({
+      element: shareCardRef.current,
+      t,
+      mode: fullItem.type,
+      score,
+      scanId: fullItem.id,
+      onLoading: setIsSharing
+    });
     
     setShareItem(null);
   }, [shareItem, t, session]);
