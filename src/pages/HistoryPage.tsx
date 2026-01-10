@@ -8,7 +8,7 @@ import { Logo } from '../components/Logo';
 import { ShareCard } from '../components/ShareCard';
 import { Share2, Sparkles, Trash2 } from 'lucide-react';
 import { shareOutfit } from '../lib/share';
-import type { HistoryItem } from '../types';
+import type { HistoryItem, PersonaAnalysisResult, StyleResult } from '../types';
 
 export const HistoryPage: React.FC = () => {
   const { t } = useTranslation();
@@ -63,16 +63,35 @@ export const HistoryPage: React.FC = () => {
   const generateAndShare = useCallback(async () => {
     if (!shareCardRef.current || !shareItem) return;
 
-    if (shareItem.type === 'scan') {
-      const bestResult = shareItem.data.reduce((prev, current) => 
+    let fullItem: HistoryItem = shareItem;
+
+    // Check if we need to fetch full data (if simplified version is present)
+    const isScanSimplified = shareItem.type === 'scan' && !shareItem.data[0].highlights;
+    const isStyleSimplified = shareItem.type === 'style' && !(shareItem.data as StyleResult).items;
+
+    if (isScanSimplified || isStyleSimplified) {
+        setIsSharing(true);
+        try {
+            const headers = session ? { Authorization: `Bearer ${session.access_token}` } : {};
+            const res = await axios.post('/.netlify/functions/get-scan', { id: shareItem.id }, { headers });
+            fullItem = res.data;
+        } catch (error) {
+            console.error('Failed to fetch full scan details', error);
+            setIsSharing(false);
+            return;
+        }
+    }
+
+    if (fullItem.type === 'scan') {
+      const bestResult = fullItem.data.reduce((prev: PersonaAnalysisResult, current: PersonaAnalysisResult) => 
         (prev.score > current.score) ? prev : current
-      , shareItem.data[0]);
+      , fullItem.data[0]);
 
       await shareOutfit({
         element: shareCardRef.current,
         t,
         score: bestResult.score,
-        scanId: shareItem.id,
+        scanId: fullItem.id,
         onLoading: setIsSharing
       });
     } else {
@@ -80,13 +99,13 @@ export const HistoryPage: React.FC = () => {
         element: shareCardRef.current,
         t,
         mode: 'style',
-        scanId: shareItem.id,
+        scanId: fullItem.id,
         onLoading: setIsSharing
       });
     }
     
     setShareItem(null);
-  }, [shareItem, t]);
+  }, [shareItem, t, session]);
 
   useEffect(() => {
     if (shareItem && shareCardRef.current) {
@@ -119,14 +138,14 @@ export const HistoryPage: React.FC = () => {
             ref={shareCardRef}
             image={shareItem.image_url}
             score={currentBestResult.score}
-            highlights={currentBestResult.highlights}
+            highlights={currentBestResult.highlights || []} // Handle missing highlights safely before fetch
           />
         ) : shareItem.type === 'style' ? (
           <ShareCard 
             ref={shareCardRef}
             mode="style"
             image={shareItem.generated_image_url || shareItem.image_url}
-            items={shareItem.data.items}
+            items={(shareItem.data as StyleResult).items || []} // Handle missing items safely
             title={t('style_button')}
           />
         ) : null
@@ -158,7 +177,7 @@ export const HistoryPage: React.FC = () => {
             <div className="flex flex-col gap-4">
               {history.map((item) => {
                 if (item.type === 'scan') {
-                  const bestResult = item.data.reduce((prev, current) => 
+                  const bestResult = item.data.reduce((prev: PersonaAnalysisResult, current: PersonaAnalysisResult) => 
                     (prev.score > current.score) ? prev : current
                   , item.data[0]);
 

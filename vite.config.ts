@@ -17,7 +17,7 @@ export default defineConfig({
       },
       workbox: {
         navigateFallbackDenylist: [/^\/.netlify/],
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,png,svg}'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

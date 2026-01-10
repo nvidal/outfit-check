@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -27,7 +27,7 @@ export const RecommendPage = () => {
   const { t, i18n } = useTranslation();
   const { session } = useAuth();
   const location = useLocation();
-  const locationState = location.state as { image?: string; result?: RecommendationResult } | null;
+  const locationState = location.state as { image?: string; result?: RecommendationResult; id?: string } | null;
   const shareCardRef = useRef<HTMLDivElement>(null);
 
   const [image, setImage] = useState<string | null>(locationState?.image || null);
@@ -39,6 +39,32 @@ export const RecommendPage = () => {
   const [isSharing, setIsSharing] = useState(false);
   const [result, setResult] = useState<RecommendationResult | null>(locationState?.result || null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // If we have a result but it's simplified (missing items) and we have an ID, fetch full details
+    if (result && (!result.items || result.items.length === 0) && locationState?.id) {
+       setIsLoading(true);
+       const fetchFullStyle = async () => {
+         try {
+           const headers = session ? { Authorization: `Bearer ${session.access_token}` } : {};
+           const res = await axios.post('/.netlify/functions/get-scan', { id: locationState.id }, { headers });
+           if (res.data && res.data.data) {
+             const fullResult = res.data.data;
+             if (!fullResult.image && res.data.generated_image_url) {
+               fullResult.image = res.data.generated_image_url;
+             }
+             setResult(fullResult);
+           }
+         } catch (err) {
+           console.error("Failed to fetch full style", err);
+           setError(t('analysis_error'));
+         } finally {
+           setIsLoading(false);
+         }
+       };
+       fetchFullStyle();
+    }
+  }, [result, locationState, session, t]);
 
   const handleCapture = (base64: string) => {
     setImage(base64 || null);
@@ -233,7 +259,7 @@ export const RecommendPage = () => {
                     <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-5 pt-20">
                        <h3 className="text-xs font-black uppercase tracking-widest text-amber-300 mb-2 drop-shadow-md">{t('the_look')}</h3>
                        <ul className="space-y-1.5">
-                         {result.items.map((item, i) => (
+                         {result.items?.map((item, i) => (
                            <li key={i} className="flex items-start gap-2">
                              <div className="h-1 w-1 rounded-full bg-white mt-1.5 shrink-0 shadow-[0_0_5px_white]" />
                              <span className="text-xs font-bold text-white leading-relaxed drop-shadow-md">{item}</span>
@@ -249,7 +275,7 @@ export const RecommendPage = () => {
                     
                     <h3 className="text-xs font-black uppercase tracking-widest text-amber-300 mb-3 relative z-10">{t('the_look')}</h3>
                     <ul className="space-y-3 relative z-10">
-                      {result.items.map((item, i) => (
+                      {result.items?.map((item, i) => (
                         <li key={i} className="flex items-start gap-3">
                           <div className="h-1.5 w-1.5 rounded-full bg-white mt-2 shrink-0" />
                           <span className="text-sm font-medium leading-relaxed">{item}</span>

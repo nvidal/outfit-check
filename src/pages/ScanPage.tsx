@@ -51,6 +51,34 @@ export const ScanPage = () => {
   }, []);
 
   useEffect(() => {
+    // Check if we need to fetch full results (if coming from history with simplified data)
+    if (currentScanId && personaResults && personaResults.length > 0 && !personaResults[0].critique) {
+      setIsLoading(true);
+      const fetchFullScan = async () => {
+        try {
+          const headers = session ? { Authorization: `Bearer ${session.access_token}` } : {};
+          const response = await axios.post('/.netlify/functions/get-scan', { id: currentScanId }, { headers });
+          
+          if (response.data && response.data.data) {
+             setPersonaResults(response.data.data);
+             // Update selected persona to best score again
+             const best = response.data.data.reduce((prev: PersonaAnalysisResult, current: PersonaAnalysisResult) => 
+                (prev.score > current.score) ? prev : current
+             , response.data.data[0]);
+             if (best) setSelectedPersona(best.persona);
+          }
+        } catch (err) {
+          console.error("Failed to load full scan", err);
+          setError(t('analysis_error'));
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchFullScan();
+    }
+  }, [currentScanId, personaResults, session, t]);
+
+  useEffect(() => {
     if (!location.state) {
       setImage(null);
       setPersonaResults(null);
@@ -150,7 +178,7 @@ export const ScanPage = () => {
       navigate('/scan', { state: { result: results, image, id: scanId, language: currentLang }, replace: true });
 
       const best = results.length > 0
-        ? results.reduce<PersonaAnalysisResult | null>((bestSoFar, current) => {
+        ? results.reduce<PersonaAnalysisResult | null>((bestSoFar: PersonaAnalysisResult | null, current: PersonaAnalysisResult) => {
             if (!bestSoFar || current.score > bestSoFar.score) {
               return current;
             }
@@ -359,7 +387,7 @@ export const ScanPage = () => {
 
               {/* Highlights List */}
               <div className="grid gap-2 mt-2">
-                {displayResult.highlights.map((h, i) => (
+                {displayResult.highlights?.map((h, i) => (
                   <button 
                     key={i} 
                     onClick={() => {
