@@ -1,5 +1,6 @@
 import React from 'react';
 import { HighlightOverlay } from './HighlightOverlay';
+import { getOptimizedImageUrl } from '../lib/supabase';
 
 interface Highlight {
   type: 'good' | 'bad';
@@ -30,10 +31,10 @@ export const OutfitImage: React.FC<OutfitImageProps> = ({
   return (
     <div className={`relative ${aspectRatio} w-full overflow-hidden rounded-2xl shadow-xl shrink-0 bg-black ${className}`}>
       <img 
-        src={image} 
+        src={getOptimizedImageUrl(image, 1080)} 
         alt="Outfit" 
         className="h-full w-full object-cover" 
-        loading="lazy"
+        // removed loading="lazy" to improve LCP
       />
       
       {highlights && highlights.length > 0 && (

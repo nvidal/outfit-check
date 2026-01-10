@@ -1,5 +1,3 @@
-import html2canvas from 'html2canvas';
-
 interface ShareOptions {
   element: HTMLElement;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -17,6 +15,8 @@ export const shareOutfit = async ({ element, t, score, mode = 'scan', scanId, la
     await document.fonts.ready;
     // Delay to ensure everything is rendered
     await new Promise(resolve => setTimeout(resolve, 500));
+
+    const html2canvas = (await import('html2canvas')).default;
 
     const canvas = await html2canvas(element, {
       scale: 1,
