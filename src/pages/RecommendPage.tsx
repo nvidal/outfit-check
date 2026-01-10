@@ -123,7 +123,7 @@ export const RecommendPage = () => {
 
           {step === 'details' && image && (
             <div className="flex flex-col h-full animate-in slide-in-from-right duration-300">
-              <div className="w-32 mx-auto mb-6 shrink-0">
+              <div className="w-64 mx-auto mb-6 shrink-0">
                 <OutfitImage image={image} className="border-2 border-white/20" />
               </div>
 
