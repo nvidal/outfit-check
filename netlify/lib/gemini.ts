@@ -318,7 +318,7 @@ JSON Structure:
     if (generatedImageBase64 && generatedImageMimeType) {
       parsed.image = `data:${generatedImageMimeType};base64,${generatedImageBase64}`;
     } else {
-      console.warn("No image generated despite responseModalities config.");
+      console.warn("No image generated despite responseModalities config. Result:", JSON.stringify(result, null, 2));
     }
 
     return parsed;
