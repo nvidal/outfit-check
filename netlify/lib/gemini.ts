@@ -295,6 +295,7 @@ JSON Structure:
 
     // RETRY LOGIC: If image is missing, try again emphasizing image generation
     if (!generatedImageBase64) {
+       console.warn("First attempt missing image. Result dump:", JSON.stringify(result, null, 2));
        console.warn("First attempt missing image, retrying with emphasized prompt...");
        const retryPrompt = `
 **CRITICAL INSTRUCTION:** YOU MUST GENERATE AN IMAGE.
@@ -332,7 +333,7 @@ ${prompt}
     if (generatedImageBase64 && generatedImageMimeType) {
       parsed.image = `data:${generatedImageMimeType};base64,${generatedImageBase64}`;
     } else {
-      console.warn("No image generated in the response parts.");
+      console.warn("No image generated in the response parts. Final result dump:", JSON.stringify(result, null, 2));
     }
 
     return parsed;
