@@ -8,6 +8,7 @@ import { Logo } from '../components/Logo';
 import { ShareCard } from '../components/ShareCard';
 import { Share2, Sparkles, Trash2 } from 'lucide-react';
 import { shareOutfit } from '../lib/share';
+import { getOptimizedImageUrl } from '../lib/supabase';
 import type { HistoryItem, PersonaAnalysisResult, StyleResult } from '../types';
 
 export const HistoryPage: React.FC = () => {
@@ -241,7 +242,7 @@ export const HistoryPage: React.FC = () => {
                     >
                       <div className="h-16 w-16 shrink-0 rounded-xl overflow-hidden bg-black/20 relative group">
                         <img 
-                          src={item.generated_image_url || item.image_url} 
+                          src={getOptimizedImageUrl(item.generated_image_url || item.image_url, 200)} 
                           alt="Style" 
                           className="h-full w-full object-cover" 
                         />
