@@ -1,10 +1,17 @@
 import { Client } from "@neondatabase/serverless";
+import { createClient } from "@supabase/supabase-js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseClient = supabaseUrl && supabaseKey
+  ? createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
+  : null;
 
 const formatError = (message: string, status: number) =>
   new Response(JSON.stringify({ error: message }), {
@@ -24,6 +31,10 @@ export default async function handler(req: Request) {
     });
   }
 
+  if (!supabaseClient) {
+    return formatError("Missing Supabase configuration", 500);
+  }
+
   let body: { id?: string };
 
   try {
@@ -38,6 +49,19 @@ export default async function handler(req: Request) {
     return formatError("Missing scan ID", 400);
   }
 
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return formatError("Unauthorized", 401);
+  }
+
+  const token = authHeader.replace("Bearer ", "");
+  const { data: { user }, error } = await supabaseClient.auth.getUser(token);
+  if (!user || error) {
+    return formatError("Unauthorized", 401);
+  }
+
+  const userId = user.id;
+
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
     return formatError("Missing DATABASE_URL", 500);
@@ -48,11 +72,11 @@ export default async function handler(req: Request) {
 
   try {
     // Try Scan
-    let result = await client.query(
-      `SELECT id, 'scan' as type, image_url, ai_results as data, created_at, occasion, user_name
-       FROM scans 
-       WHERE id = $1`,
-      [id]
+      let result = await client.query(
+        `SELECT id, 'scan' as type, image_url, ai_results as data, created_at, occasion, user_name
+         FROM scans 
+         WHERE id = $1 AND user_id = $2`,
+        [id, userId]
     );
 
     if (result.rows.length === 0) {
@@ -60,8 +84,8 @@ export default async function handler(req: Request) {
       result = await client.query(
         `SELECT id, 'style' as type, image_url, generated_image_url, result as data, created_at
          FROM styles 
-         WHERE id = $1`,
-        [id]
+         WHERE id = $1 AND user_id = $2`,
+        [id, userId]
       );
     }
 

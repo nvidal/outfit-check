@@ -5,6 +5,7 @@ import { getLang, formatError } from "../lib/i18n";
 import { parseImagePayload, getExtension } from "../lib/image";
 import { analyzeWithGemini } from "../lib/gemini";
 import { uploadImage } from "../lib/storage";
+import { extractClientIp } from "../lib/request";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +14,8 @@ const CORS_HEADERS = {
 };
 
 const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+const ANALYZE_USER_LIMIT = 20;
+const ANALYZE_GUEST_LIMIT = 3;
 
 export default async function handler(req: Request) {
   if (req.method === "OPTIONS") {
@@ -52,15 +55,14 @@ export default async function handler(req: Request) {
   const authHeader = req.headers.get("Authorization");
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error } = await supabaseClient.auth.getUser(token);
-    
-    if (user && !error) {
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    if (user && !authError) {
       userId = user.id;
       userName = user.email || null;
     }
   }
 
-  const clientIp = req.headers.get("x-forwarded-for")?.split(',')[0] || "unknown";
+  const clientIp = extractClientIp(req);
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
     return formatError("db_url", 500, lang);
@@ -88,7 +90,7 @@ export default async function handler(req: Request) {
     const usageRes = await Promise.race([queryPromise, queryTimeout]) as { rows: { count: string }[] };
     
     const count = parseInt(usageRes.rows[0].count);
-    const LIMIT = userId ? 50 : 3;
+    const LIMIT = userId ? ANALYZE_USER_LIMIT : ANALYZE_GUEST_LIMIT;
 
     if (count >= LIMIT) {
       return formatError(userId ? "limit_user" : "limit_guest", 429, lang);

@@ -5,12 +5,17 @@ import { getLang, formatError } from "../lib/i18n";
 import { parseImagePayload, getExtension } from "../lib/image";
 import { recommendOutfit } from "../lib/gemini";
 import { uploadImage } from "../lib/storage";
+import { extractClientIp } from "../lib/request";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+const STYLE_USER_LIMIT = 20;
+const STYLE_GUEST_LIMIT = 3;
 
 export default async function handler(req: Request) {
   if (req.method === "OPTIONS") {
@@ -52,13 +57,12 @@ export default async function handler(req: Request) {
     return formatError("api_key", 500, lang);
   }
 
-  // Auth Check
   let userId: string | null = null;
   const authHeader = req.headers.get("Authorization");
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error } = await supabaseClient.auth.getUser(token);
-    if (user && !error) {
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    if (user && !authError) {
       userId = user.id;
     }
   }
@@ -68,13 +72,29 @@ export default async function handler(req: Request) {
     return formatError("db_url", 500, lang);
   }
   const dbClient = new Client({ connectionString: dbUrl });
-  const clientIp = req.headers.get("x-forwarded-for")?.split(',')[0] || "unknown";
+  const clientIp = extractClientIp(req);
 
   try {
     await dbClient.connect();
 
+    const usageRes = await dbClient.query(
+      `SELECT COUNT(*) FROM styles 
+       WHERE (ip_address = $1 OR user_id = $2)
+       AND created_at > NOW() - INTERVAL '24 hours'`,
+      [clientIp, userId]
+    );
+    const recentCount = parseInt(usageRes.rows[0].count, 10);
+    const limit = userId ? STYLE_USER_LIMIT : STYLE_GUEST_LIMIT;
+    if (recentCount >= limit) {
+      return formatError(userId ? "limit_user" : "limit_guest", 429, lang);
+    }
+
     // 1. Run AI Analysis & Generation
     const { mimeType, base64 } = parseImagePayload(image);
+    const byteLength = Buffer.from(base64, "base64").length;
+    if (byteLength > MAX_IMAGE_BYTES) {
+      return formatError("image_too_large", 413, lang);
+    }
     
     const aiResult = await recommendOutfit({
       apiKey,
