@@ -250,7 +250,7 @@ JSON Structure:
   "reasoning": "Max 1 sentence explaining the choice.",
   "dos": ["Do 1", "Do 2"],
   "donts": ["Don't 1", "Don't 2"],
-  "visual_prompt": "Photorealistic full-body shot of a [user description] wearing [outfit details]..."
+  "visual_prompt": "Hyper-detailed photorealistic prompt. You MUST describe the person's EXACT hair (texture/length/color), skin tone, and build from the photo to ensure a lookalike. Example: 'A photorealistic shot of a person with wavy chestnut hair, olive skin, and athletic build wearing...'"
 }
 `;
 
@@ -293,48 +293,55 @@ JSON Structure:
 
     let { text: responseText, img: generatedImageBase64, mime: generatedImageMimeType } = extractParts(candidate);
 
-    // RETRY LOGIC: If image is missing, try again emphasizing image generation
+    // Parse JSON helper to reuse
+    const parseJSON = (txt: string) => {
+      try {
+        const jsonString = txt.replace(/```json/g, "").replace(/```/g, "").trim();
+        return JSON.parse(jsonString);
+      } catch {
+        const match = txt.match(/\{[\s\S]*\}/);
+        return match ? JSON.parse(match[0]) : null;
+      }
+    };
+
+    let parsed = parseJSON(responseText);
+
+    // RETRY LOGIC: If image is missing, try again
     if (!generatedImageBase64) {
-       console.warn("First attempt missing image. Result dump:", JSON.stringify(result, null, 2));
-       console.warn("First attempt missing image, retrying with emphasized prompt...");
-       const retryPrompt = `
-**CRITICAL INSTRUCTION:** YOU MUST GENERATE AN IMAGE.
-${prompt}
-**REMINDER:** The response MUST contain both the JSON text AND the generated image file.
-`;
+       console.warn("First attempt missing image, retrying with focused prompt...");
+       
+       let retryPrompt = "";
+       if (parsed?.visual_prompt) {
+          // If we have the description, ask ONLY for the image to avoid "laziness"
+          retryPrompt = `**TASK:** Generate the image described below. DO NOT return any text, ONLY the generated image file.
+          
+**IMAGE DESCRIPTION:** ${parsed.visual_prompt}`;
+       } else {
+          retryPrompt = `**CRITICAL:** Generate BOTH the JSON analysis AND the outfit image.\n${prompt}`;
+       }
+
        result = await generate(retryPrompt);
        candidate = result.candidates?.[0];
        const retryParts = extractParts(candidate);
        
-       // Update if we got better results (or at least new text)
-       responseText = retryParts.text || responseText;
        generatedImageBase64 = retryParts.img;
        generatedImageMimeType = retryParts.mime;
+       
+       // If retry produced JSON but the first one didn't, update it
+       if (!parsed && retryParts.text) {
+          parsed = parseJSON(retryParts.text);
+       }
     }
 
-    if (!responseText) throw new Error("No text response received");
-
-    // Parse JSON
-    const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-    let parsed;
-    try {
-        parsed = JSON.parse(jsonString);
-    } catch {
-        // Attempt to find JSON block if mixed with other text
-        const match = jsonString.match(/\{[\s\S]*\}/);
-        if (match) {
-            parsed = JSON.parse(match[0]);
-        } else {
-            throw new Error("Failed to parse JSON response");
-        }
-    }
+    if (!parsed) throw new Error("Failed to parse JSON response");
 
     // Attach Generated Image
     if (generatedImageBase64 && generatedImageMimeType) {
       parsed.image = `data:${generatedImageMimeType};base64,${generatedImageBase64}`;
-    } else {
-      console.warn("No image generated in the response parts. Final result dump:", JSON.stringify(result, null, 2));
     }
+
+    return parsed;
+
 
     return parsed;
 
