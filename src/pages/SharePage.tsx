@@ -26,7 +26,9 @@ export const SharePage: React.FC = () => {
   useEffect(() => {
     const fetchScan = async () => {
       try {
-        const response = await axios.post('/.netlify/functions/get-scan', { id });
+        const response = await axios.get('/.netlify/functions/get-scan', { 
+          params: { id } 
+        });
         const scanData = response.data as HistoryItem;
         setData(scanData);
         

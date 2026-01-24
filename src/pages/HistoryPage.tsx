@@ -242,7 +242,7 @@ export const HistoryPage: React.FC = () => {
                     >
                       <div className="h-16 w-16 shrink-0 rounded-xl overflow-hidden bg-black/20 relative group">
                         <img 
-                          src={getOptimizedImageUrl(item.generated_image_url || item.image_url, 200)} 
+                          src={getOptimizedImageUrl(item.generated_image_url || item.image_url)} 
                           alt="Style" 
                           className="h-full w-full object-cover" 
                         />

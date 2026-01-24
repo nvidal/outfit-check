@@ -12,7 +12,7 @@ export const supabase = createClient(
   supabaseAnonKey || ''
 );
 
-export const getOptimizedImageUrl = (url: string, _width: number = 800) => {
+export const getOptimizedImageUrl = (url: string) => {
   // Return original URL for now as Supabase Image Transformations might be disabled/unsupported on this project
   // preventing broken images.
   // if (url && typeof url === 'string' && url.includes('/storage/v1/object/public/')) {

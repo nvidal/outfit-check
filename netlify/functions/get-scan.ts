@@ -1,17 +1,10 @@
 import { Client } from "@neondatabase/serverless";
-import { createClient } from "@supabase/supabase-js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabaseClient = supabaseUrl && supabaseKey
-  ? createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
-  : null;
 
 const formatError = (message: string, status: number) =>
   new Response(JSON.stringify({ error: message }), {
@@ -24,43 +17,19 @@ export default async function handler(req: Request) {
     return new Response(null, { headers: CORS_HEADERS });
   }
 
-  if (req.method !== "POST") {
+  if (req.method !== "GET") {
     return new Response("Method Not Allowed", {
       status: 405,
       headers: CORS_HEADERS,
     });
   }
 
-  if (!supabaseClient) {
-    return formatError("Missing Supabase configuration", 500);
-  }
-
-  let body: { id?: string };
-
-  try {
-    body = await req.json();
-  } catch {
-    return formatError("Invalid JSON", 400);
-  }
-
-  const { id } = body;
+  const url = new URL(req.url);
+  const id = url.searchParams.get("id");
 
   if (!id) {
     return formatError("Missing scan ID", 400);
   }
-
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return formatError("Unauthorized", 401);
-  }
-
-  const token = authHeader.replace("Bearer ", "");
-  const { data: { user }, error } = await supabaseClient.auth.getUser(token);
-  if (!user || error) {
-    return formatError("Unauthorized", 401);
-  }
-
-  const userId = user.id;
 
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
@@ -75,8 +44,8 @@ export default async function handler(req: Request) {
       let result = await client.query(
         `SELECT id, 'scan' as type, image_url, ai_results as data, created_at, occasion, user_name
          FROM scans 
-         WHERE id = $1 AND user_id = $2`,
-        [id, userId]
+         WHERE id = $1`,
+        [id]
     );
 
     if (result.rows.length === 0) {
@@ -84,8 +53,8 @@ export default async function handler(req: Request) {
       result = await client.query(
         `SELECT id, 'style' as type, image_url, generated_image_url, result as data, created_at
          FROM styles 
-         WHERE id = $1 AND user_id = $2`,
-        [id, userId]
+         WHERE id = $1`,
+        [id]
       );
     }
 
@@ -94,7 +63,11 @@ export default async function handler(req: Request) {
     }
 
     return new Response(JSON.stringify(result.rows[0]), {
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      headers: { 
+        ...CORS_HEADERS, 
+        "Content-Type": "application/json",
+        "Cache-Control": "public, s-maxage=3600, max-age=3600"
+      },
     });
   } catch (error) {
     console.error("Error fetching scan:", error);

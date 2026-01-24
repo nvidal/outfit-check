@@ -31,7 +31,7 @@ export const OutfitImage: React.FC<OutfitImageProps> = ({
   return (
     <div className={`relative ${aspectRatio} w-full overflow-hidden rounded-2xl shadow-xl shrink-0 bg-black ${className}`}>
       <img 
-        src={getOptimizedImageUrl(image, 1080)} 
+        src={getOptimizedImageUrl(image)} 
         alt="Outfit" 
         className="h-full w-full object-cover" 
         // removed loading="lazy" to improve LCP
