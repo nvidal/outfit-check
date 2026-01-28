@@ -6,22 +6,29 @@ export const analyzeWithGemini = async ({ apiKey, imageBase64, mimeType, languag
   const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `
-Role: Expert Stylist. Analyze image for: ${occasion}.
-Output: JSON with 3 personas (editor, hypebeast, boho).
-For each: score (1-10), title, critique (max 2 sentences), improvement_tip, 3 highlights (point_2d: [y, x] 0-1000).
+Role: Expert Stylist. Analyze outfit for: ${occasion}.
+Return a JSON object with a "results" array containing exactly 3 personas (editor, hypebeast, boho).
+Each persona must have: score (1-10), title, critique (max 2 sentences), improvement_tip, 3 highlights (point_2d: [y, x] 0-1000).
 Language: ${language.toUpperCase()}.
-Constraint: Be extremely concise. No Google Search.
+No Google Search. Be extremely concise.
 `;
 
   try {
     const result = await ai.models.generateContent({
       model: MODEL,
-      config: { responseMimeType: "application/json", maxOutputTokens: 1000 },
+      config: { responseMimeType: "application/json", maxOutputTokens: 2000 },
       contents: [prompt, { inlineData: { data: imageBase64, mimeType } }],
     }) as any;
 
-    const data = JSON.parse(result.text.replace(/```json/g, "").replace(/```/g, "").trim());
-    return data.results || data;
+    const responseText = result.text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const data = JSON.parse(responseText);
+    
+    // Robust parsing for different AI output formats
+    if (data.results && Array.isArray(data.results)) return data.results;
+    if (Array.isArray(data)) return data;
+    if (data.editor || data.hypebeast) return Object.values(data); // In case it returns an object of personas
+    
+    throw new Error("Invalid format");
   } catch (err) {
     console.error("AI Analysis Failed", err);
     throw err;
@@ -30,7 +37,7 @@ Constraint: Be extremely concise. No Google Search.
 
 export const recommendOutfit = async ({ apiKey, imageBase64, mimeType, language, userRequest }: any) => {
   const ai = new GoogleGenAI({ apiKey });
-  const prompt = `Style Me: ${userRequest}. Lang: ${language}. JSON format: user_analysis, outfit_name, items, reasoning, dos, donts, visual_prompt (photoreal EN).`;
+  const prompt = `Style Me: ${userRequest}. Lang: ${language}. Return JSON: user_analysis, outfit_name, items, reasoning, dos, donts, visual_prompt (EN photoreal).`;
 
   try {
     const textRes = await ai.models.generateContent({
