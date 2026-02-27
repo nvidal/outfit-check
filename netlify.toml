@@ -2,6 +2,11 @@
   command = "npm run build"
   publish = "dist"
 
+[dev]
+  command = "npm run vite"
+  port = 8888
+  targetPort = 5173
+
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
@@ -9,7 +14,17 @@
 [functions.analyze]
   timeout = 60
 
-[[redirects]]
+[[context.production.redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[context.deploy-preview.redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[context.branch-deploy.redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
